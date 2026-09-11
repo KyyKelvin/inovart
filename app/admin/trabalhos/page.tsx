@@ -1,0 +1,1 @@
+import{AdminCollection}from"@/components/admin-collection";export default function Page(){return <main id="conteudo"><section className="section"><div className="site-shell"><div className="section-head"><h1>Trabalhos.</h1><p>Peças vinculadas a artesãos e controladas pelo ciclo editorial.</p></div><AdminCollection table="works" title="trabalho"/></div></section></main>}

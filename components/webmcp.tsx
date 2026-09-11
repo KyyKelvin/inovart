@@ -1,0 +1,3 @@
+"use client";
+import{useEffect}from"react";
+export function WebMcp(){useEffect(()=>{const nav=navigator as Navigator&{modelContext?:{registerTool:(tool:unknown)=>void}};if(!nav.modelContext?.registerTool)return;nav.modelContext.registerTool({name:"open_artisan_submission",description:"Abre o formulário público para um artesão enviar seu trabalho ao arquivo InovArt. Não envia dados automaticamente.",inputSchema:{type:"object",properties:{}},execute:async()=>{window.location.href="/participar";return{content:[{type:"text",text:"Formulário de participação aberto. A pessoa precisa revisar e enviar os próprios dados."}]}}})},[]);return null}

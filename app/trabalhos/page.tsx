@@ -1,0 +1,2 @@
+import{Footer}from"@/components/footer";import{LiveArchive}from"@/components/live-archive";
+export const metadata={title:"Trabalhos"};export default function Page(){return <main id="conteudo"><section className="section grid-noise"><div className="site-shell"><div className="section-head"><div><p className="eyebrow">Índice 02 / cultura material</p><h1>Trabalhos.</h1></div><p>Um inventário visual de peças e processos. Aqui, o objeto aparece junto da técnica, da matéria e de quem o produziu.</p></div><LiveArchive kind="works"/></div></section><Footer/></main>}

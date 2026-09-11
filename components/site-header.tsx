@@ -1,0 +1,4 @@
+"use client";
+import Link from"next/link";import{useState}from"react";
+const links=[["/artesaos","Artesãos"],["/trabalhos","Trabalhos"],["/sobre","Sobre"],["/contato","Contato"]];
+export function SiteHeader(){const[open,setOpen]=useState(false);return <header className="nav"><div className="site-shell nav-inner"><Link className="brand" href="/" aria-label="InovArt, início"><b>Inov</b><i>Art</i><span>arquivo vivo<br/>Varginha · MG</span></Link><button className="menu" onClick={()=>setOpen(!open)} aria-expanded={open}>menu / {open?"fechar":"abrir"}</button><nav className={open?"open":""} aria-label="Principal">{links.map(([href,label])=><Link key={href} href={href} onClick={()=>setOpen(false)}>{label}</Link>)}<Link className="nav-cta" href="/participar">Quero participar ↗</Link></nav></div></header>}
