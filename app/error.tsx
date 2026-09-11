@@ -1,0 +1,2 @@
+"use client";
+export default function ErrorPage({ reset }: { reset: () => void }) { return <main id="conteudo" className="site-shell section"><p className="eyebrow">Arquivo temporariamente indisponível</p><h1 className="display error-title">Uma pausa<br />na consulta.</h1><p>Não foi possível carregar este registro. Você pode tentar novamente.</p><button onClick={reset} className="button primary">Tentar novamente</button></main>; }
