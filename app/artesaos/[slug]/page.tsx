@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import Link from "next/link";
+import Link from "../../../components/safe-link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/footer";
 import { Window } from "@/components/window";

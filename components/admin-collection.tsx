@@ -31,8 +31,10 @@ export function AdminCollection({ table, title }: { table: Table; title: string 
   async function changeStatus(row: Row, action: "publish" | "archive") {
     setBusy(true);
     try {
-      await adminRequest(action, { table, id: row.id });
-      setPendingAction(null); await load(); setMessage(action === "publish" ? "Registro publicado." : "Registro arquivado.");
+      const result = await adminRequest<{ cleanup_pending?: boolean }>(action, { table, id: row.id });
+      setPendingAction(null); await load();
+      const confirmation = action === "publish" ? "Registro publicado." : "Registro arquivado.";
+      setMessage(result.cleanup_pending ? `${confirmation} As imagens antigas aguardam a limpeza automática e serão removidas na próxima operação editorial.` : confirmation);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível alterar o registro."); }
     finally { setBusy(false); }
   }

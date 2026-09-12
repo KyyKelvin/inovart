@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "./safe-link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 

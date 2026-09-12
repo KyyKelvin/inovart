@@ -8,7 +8,7 @@ O projeto traduz o guia **“Arquivo Tecnoartesanal de Varginha”** para um MVP
 
 - Fundo quase preto (`#080808`), painéis (`#0D0F0E`), linhas grafite (`#343A37`) e texto papel (`#F0F0EA`).
 - Azul-cobalto (`#2347FF`) como ação e ritmo, verde ácido (`#55F58A`) para estado e magenta (`#F250C7`) apenas para alertas editoriais.
-- Títulos blackletter, metadados monoespaçados, janelas de sistema, coordenadas, grids, ruído e recortes abstratos.
+- Títulos serifados editoriais, pesados e compactos; metadados monoespaçados; janelas de sistema, coordenadas, grids, ruído e recortes abstratos. As imagens dos trabalhos recebem uma moldura própria inspirada no Windows XP — barra cobalto, controles em relevo e status — integrada à linguagem tecnoartesanal, sem transformar toda a interface em uma réplica de sistema operacional.
 - Um “relicário” pseudo-3D no hero combina partículas em canvas, planos editoriais em perspectiva e resposta suave ao ponteiro. Os cards do acervo usam profundidade em camadas, sem esconder informação em hover.
 - Movimento curto e funcional, com composição estática em telas de toque e quando `prefers-reduced-motion` estiver ativo. A orientação segue a recomendação oficial do Motion de desativar parallax e grandes transformações para pessoas que preferem movimento reduzido: [acessibilidade no Motion](https://motion.dev/docs/react-accessibility).
 - Fotografias reais só entram com autorização; até lá, o site usa geometrias abstratas e sinaliza claramente o conteúdo demonstrativo.
@@ -27,7 +27,7 @@ Fluxo editorial:
 
 ## Segurança e decisões verificadas
 
-- RLS está ativado em todas as tabelas públicas, com políticas separadas para leitura anônima e administração autenticada. O verificador de segurança do Supabase retornou zero alertas após as migrações.
+- RLS está ativado em todas as tabelas públicas, com políticas separadas para leitura anônima e administração autenticada. O verificador do Supabase não retornou avisos nem erros; as tabelas privadas deliberadamente fechadas permanecem sem políticas públicas. URLs substituídas ou arquivadas entram atomicamente em uma fila privada e só saem dela depois que o Storage confirma a remoção.
 - A autorização administrativa usa `app_metadata.role = admin`; metadados editáveis pelo usuário não participam da decisão.
 - Chaves secretas não são embarcadas no navegador. O frontend utiliza a chave publicável moderna. A documentação oficial recomenda publishable/secret keys para projetos novos e informa a transição das chaves legadas até o fim de 2026: [API keys do Supabase](https://supabase.com/docs/guides/api/api-keys).
 - Projetos Supabase novos exigem privilégios SQL explícitos para exposição pela API; as migrações incluem `GRANT` e RLS de forma deliberada: [mudança de segurança do Data API](https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically).
@@ -53,7 +53,7 @@ Entidades principais: `categories`, `artisans`, `artisan_contacts`, `works`, tab
 
 ## Operação e ativação controlada
 
-O acervo nasce sem pessoas fictícias publicadas. Para substituir a demonstração, são necessários retratos autorizados, biografias revisadas, técnicas, bairro, contatos com opção de divulgação e imagens/legendas dos trabalhos. A migração editorial reforçada permanece documentada e não aplicada até autorização explícita para alterar exclusivamente o projeto Supabase `test-artesao`. Depois dela, é necessário provisionar a conta do administrador, atribuir `{"role":"admin"}` em `app_metadata`, publicar a Edge Function, cadastrar o hash do segredo do proxy e só então marcar o backend como pronto.
+O acervo nasce sem pessoas fictícias publicadas. Para substituir a demonstração, são necessários retratos autorizados, biografias revisadas, técnicas, bairro, contatos com opção de divulgação e imagens/legendas dos trabalhos. A migração editorial reforçada, a Edge Function, o hash do segredo do proxy e o ambiente hospedado estão ativos exclusivamente no projeto Supabase `test-artesao`. O provisionamento de uma conta administrativa continua deliberadamente manual: a identidade escolhida deve existir no Supabase Auth e receber `{"role":"admin"}` em `app_metadata` antes de usar o link mágico.
 
 ## Critérios de aceite
 

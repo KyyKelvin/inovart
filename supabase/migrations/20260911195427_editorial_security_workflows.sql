@@ -1,5 +1,5 @@
--- PENDING USER APPROVAL. Not applied to the remote database.
--- Target: test-artesao / fpjxixijldymlkajenck only.
+-- Applied to test-artesao / fpjxixijldymlkajenck as migration 20260911195427.
+-- Editorial security, consent, proxy protection and transactional publishing workflows.
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
 alter table public.artisan_submissions add column if not exists public_email boolean not null default false;

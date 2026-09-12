@@ -1,16 +1,18 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import Link from "next/link";
+import Link from "./safe-link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { XpImageFrame } from "@/components/xp-image-frame";
 import { publicClient, safeMediaUrl, type Artisan, type Work } from "@/lib/archive";
 import { categoryNames, demoArtisans, demoWorks } from "@/lib/content";
 
 type Card = { slug: string; title: string; subtitle: string; place: string; image: string | null; categories: { slug: string; name: string }[] };
 
-function ArchiveCard({ item, index, kind }: { item: Card; index: number; kind: "artisans" | "works" }) {
+function ArchiveCard({ item, index, kind, headingLevel }: { item: Card; index: number; kind: "artisans" | "works"; headingLevel: 2 | 3 }) {
   const cardRef = useRef<HTMLAnchorElement>(null);
   const frameRef = useRef(0);
   const pointRef = useRef({ x: 0, y: 0 });
+  const CardHeading = headingLevel === 2 ? "h2" : "h3";
 
   useEffect(() => () => window.cancelAnimationFrame(frameRef.current), []);
 
@@ -50,16 +52,32 @@ function ArchiveCard({ item, index, kind }: { item: Card; index: number; kind: "
       onPointerMove={handlePointerMove}
       onPointerLeave={resetTilt}
     >
-      {item.image ? (
-        <div className="media-frame"><img src={item.image} alt={kind === "artisans" ? `Retrato de ${item.title}` : item.title} loading="lazy" decoding="async" /></div>
+      {kind === "works" ? (
+        <XpImageFrame
+          className="xp-image-frame--card"
+          label={`objeto_${String(index + 1).padStart(2, "0")}.webp`}
+          status={`${item.title} • arquivo local`}
+        >
+          {item.image ? (
+            <div className="media-frame"><img src={item.image} alt={item.title} loading="lazy" decoding="async" /></div>
+          ) : (
+            <div
+              className="card-visual"
+              data-code={`OBJ.${String(index + 1).padStart(2, "0")}`}
+              style={{ background: index % 3 === 1 ? "#2347ff" : index % 3 === 2 ? "#55f58a" : "#eae6da", "--tilt": `${index % 2 ? 7 : -7}deg` } as CSSProperties}
+            />
+          )}
+        </XpImageFrame>
+      ) : item.image ? (
+        <div className="media-frame"><img src={item.image} alt={`Retrato de ${item.title}`} loading="lazy" decoding="async" /></div>
       ) : (
         <div
           className="card-visual"
-          data-code={`${kind === "artisans" ? "ARQ" : "OBJ"}.${String(index + 1).padStart(2, "0")}`}
+          data-code={`ARQ.${String(index + 1).padStart(2, "0")}`}
           style={{ background: index % 3 === 1 ? "#2347ff" : index % 3 === 2 ? "#55f58a" : "#eae6da", "--tilt": `${index % 2 ? 7 : -7}deg` } as CSSProperties}
         />
       )}
-      <div className="card-copy"><span className="chip">{item.place}</span><h3>{item.title}</h3><p>{item.subtitle}</p><span className="card-arrow" aria-hidden="true">↗</span></div>
+      <div className="card-copy"><span className="chip">{item.place}</span><CardHeading>{item.title}</CardHeading><p>{item.subtitle}</p><span className="card-arrow" aria-hidden="true">↗</span></div>
     </Link>
   );
 }
@@ -106,7 +124,7 @@ export function LiveArchive({ kind, featured = false }: { kind: "artisans" | "wo
       <div className="field"><label htmlFor="archive-category">Técnica</label><select id="archive-category" value={category} onChange={e => setCategory(e.target.value)}><option value="">Todas as técnicas</option>{availableCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
       <p className="mono result-count" role="status">{filtered.length} {items.length ? "registros" : "exemplos"}</p>
     </div>}
-    <div className="cards archive-cards">{cards.map((item, index) => <ArchiveCard item={item} index={index} kind={kind} key={item.slug} />)}</div>
+    <div className="cards archive-cards">{cards.map((item, index) => <ArchiveCard item={item} index={index} kind={kind} headingLevel={featured ? 3 : 2} key={item.slug} />)}</div>
     {!cards.length && <div className="window form-padding"><p>Nenhum registro encontrado para esta busca.</p><button className="button" onClick={() => { setQuery(""); setCategory(""); }}>Limpar filtros</button></div>}
   </>;
 }

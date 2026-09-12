@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "./safe-link";
 import { motion, MotionConfig } from "motion/react";
 import { ArchiveReliquary } from "./archive-reliquary";
 import { Window } from "./window";

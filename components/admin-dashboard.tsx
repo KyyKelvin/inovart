@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "./safe-link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 const labels: Record<string, string> = { pending: "Recebida", under_review: "Em revisão", approved: "Aprovada", rejected: "Recusada" };

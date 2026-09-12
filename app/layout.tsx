@@ -5,7 +5,7 @@ import "./globals.css";
 import "./refinements.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://inovart-varginha.sage-frog-9303.chatgpt.site"),
+  metadataBase: new URL("https://inovart-varginha.kelvinky-augusto.chatgpt.site"),
   title: { default: "InovArt - Arquivo tecnoartesanal", template: "%s - InovArt" },
   description: "Uma cartografia viva de artesãos, técnicas e trabalhos de Varginha.",
   icons: {

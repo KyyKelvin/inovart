@@ -1,34 +1,22 @@
-# Ativação pendente do backend InovArt
+# Estado da integração InovArt
 
-A implementação local está preparada para a etapa editorial, mas esta etapa ainda não foi aplicada ao Supabase. A revisão automática recusou duas tentativas por considerar mudanças persistentes de esquema e permissões amplas para a autorização disponível.
+O backend foi ativado em 11 de setembro de 2026 exclusivamente no projeto Supabase **test-artesao** (`fpjxixijldymlkajenck`). O projeto preexistente `web-artesao` permaneceu fora do escopo.
 
-## Escopo exato a autorizar
+## Ativado
 
-Destino exclusivo: **test-artesao**, referência **fpjxixijldymlkajenck**. O projeto web-artesao está fora do escopo.
+- Seis migrações aplicadas e preservadas em `supabase/migrations`, com o histórico local sincronizado ao remoto. A mais recente, `20260912191350_harden_media_cleanup_leases`, protege a fila de mídia com leases, backoff e uma verificação de referências antes de qualquer remoção.
+- Escritas anônimas diretas removidas; formulários passam pelo proxy do Site e pela Edge Function `inovart-api`.
+- Segredo servidor-servidor gerado aleatoriamente; somente o SHA-256 é armazenado no banco e o valor original fica como segredo do Sites.
+- `INOVART_BACKEND_READY=true`, origem privada do Site e segredo do proxy configurados no ambiente hospedado.
+- Consentimento separado para divulgação de e-mail, telefone e Instagram.
+- Limitação por cliente e e-mail, validação binária de imagens e publicação/arquivamento transacionais.
+- Limites de corpo aplicados durante a leitura e dimensões JPEG, PNG e WebP verificadas antes da decodificação.
+- Relações públicas limitadas a artesãos e trabalhos publicados.
 
-Arquivo de revisão: [pending-editorial-migration.sql](./pending-editorial-migration.sql).
+## Acesso editorial
 
-A alteração adiciona:
-- consentimento separado para divulgação de cada canal de contato;
-- vínculos entre submissões, perfis e trabalhos;
-- tabela pública contendo apenas contatos autorizados;
-- transações de salvamento e revisão, com aprovação que cria rascunhos de forma idempotente;
-- configuração privada da integração, dupla limitação por cliente/e-mail e índice de expiração;
-- publicação editorial transacional para metadados, galeria sem posições duplicadas e caminhos públicos versionados;
-- arquivamento transacional que oculta o perfil, suas obras e relações antes da limpeza segura das mídias públicas;
-- atualização automática de datas e sincronização dos contatos consentidos.
+O login administrativo continua fechado por desenho: `shouldCreateUser: false` impede cadastro público. Para liberar uma pessoa, um administrador do projeto precisa provisioná-la no Supabase Auth e definir `app_metadata.role = "admin"`. Essa etapa exige escolher explicitamente a conta editorial e confirmar a entrega do link mágico; não deve ser automatizada com uma identidade presumida.
 
-Ela também retira os INSERTs anônimos diretos em submissões/mensagens/storage, substituindo-os pelo endpoint de servidor validado, e limita relações públicas a registros publicados. Não apaga tabelas ou conteúdo editorial existente.
+## Publicação
 
-## Sequência após autorização
-
-1. Aplicar o SQL revisado ao projeto indicado e salvar o identificador real retornado na pasta de migrações. Executar consultores e testes de permissões com os papéis anon, authenticated e service_role.
-2. Gerar um token aleatório de servidor; gravar apenas o SHA-256 em private.integration_settings com a chave proxy_token_sha256. Guardar o token em INOVART_PROXY_TOKEN no Sites e em .env.local (ignorado pelo Git).
-3. Implantar a função inovart-api. Ela possui autenticação própria pelo token de servidor e valida separadamente cada JWT administrativo usando getUser. O flag verify_jwt fica false porque não aceita chamadas diretas de navegador.
-4. Provisionar a conta editorial autorizada em Supabase Auth com app_metadata.role=admin, sem senha compartilhada. Configurar callbacks localhost e URL privada do Sites; desativar cadastro público e conferir entrega de e-mail.
-5. Testar um envio sintético, as duas imagens por trabalho, rejeições de arquivo inválido, limite de 12 MP, privacidade dos dados, limitação de abuso, revisão, aprovação idempotente, rascunho, publicação, substituição de galeria e arquivamento. Remover apenas dados sintéticos identificados do teste.
-6. Definir INOVART_BACKEND_READY=true e republicar o Site privado.
-
-Enquanto a ativação estiver pendente, os endpoints retornam indisponibilidade e preservam os formulários preenchidos. Não simulam envio bem-sucedido.
-
-Abertura para audiência pública exige configurar antispam adicional e revisar consentimentos/conteúdo real. O Site criado neste fluxo é uma prévia privada.
+O Site permanece privado e acessível apenas ao proprietário. Antes de torná-lo público, revisar o conteúdo real, os consentimentos, a política de privacidade e a proteção antispam de produção.

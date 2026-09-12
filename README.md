@@ -22,14 +22,14 @@ Editorial: login por link, fila de propostas, revisão com imagens privadas, edi
 
 ## Estado da integração
 
-As duas migrações iniciais foram aplicadas. A conclusão do fluxo editorial está em [ativação pendente](docs/activation.md), pois a revisão automática bloqueou a alteração do banco. O frontend está preparado e mantém envios desativados até que a ativação seja concluída e testada.
+As seis migrações, a Edge Function e o proxy seguro do Site estão ativos no projeto isolado `test-artesao`. Os formulários públicos usam validação em duas camadas, limitação de abuso e armazenamento privado. Uma fila transacional com leases preserva a remoção pendente de mídias públicas, impede a exclusão de arquivos ainda referenciados e aplica novas tentativas com espera progressiva. Consulte o [estado da integração](docs/activation.md) para o passo deliberadamente manual de provisionamento da conta editorial.
 
-Não definir INOVART_BACKEND_READY=true antes da migração, da função e dos testes. Copiar .env.example para .env.local somente ao configurar o ambiente. Chaves privadas nunca usam NEXT_PUBLIC_.
+Chaves privadas nunca usam `NEXT_PUBLIC_`. Copie `.env.example` para `.env.local` somente ao configurar um ambiente local; o segredo hospedado é gerenciado pelo Sites.
 
 ## Referências
 
 - [Arquitetura e pesquisa](docs/architecture-and-research.md)
-- [SQL para revisão](docs/pending-editorial-migration.sql)
+- [Migrações do Supabase](supabase/migrations)
 - [Guia de ativação](docs/activation.md)
 
 A camada de autenticação do Sites controla quem pode abrir a hospedagem privada. O papel editorial do Supabase é uma autorização separada.

@@ -1,13 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 import { ImageMagick, initializeImageMagick, MagickFormat } from "@imagemagick/magick-wasm";
-import { contactSchema, submissionSchema, editorialSchema, identifyImage } from "../_shared/validation.ts";
+import { contactSchema, submissionSchema, editorialSchema, identifyImage, assertImageDimensions } from "../_shared/validation.ts";
 import { z } from "zod";
 
 const url = Deno.env.get("SUPABASE_URL")!;
 const keyMap = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}");
 const serviceKey = keyMap.default || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db = createClient(url, serviceKey, { auth:{persistSession:false,autoRefreshToken:false} });
-const magickReady = Deno.readFile(new URL("magick.wasm",import.meta.resolve("@imagemagick/magick-wasm"))).then(initializeImageMagick);
+let magickReady: Promise<void> | undefined;
+function ensureMagick() {
+  magickReady ??= Deno.readFile(new URL("magick.wasm",import.meta.resolve("@imagemagick/magick-wasm"))).then(initializeImageMagick);
+  return magickReady;
+}
 class ApiError extends Error {
   constructor(message:string,readonly status=400,readonly retryAfter?:number){super(message);this.name="ApiError";}
 }
@@ -45,15 +49,24 @@ async function imageBytes(file:File) {
   let detected:string;
   try{detected=identifyImage(bytes);}catch(error){throw new ApiError(error instanceof Error?error.message:"Imagem inválida.",413);}
   if(file.type && detected!==file.type)throw new ApiError("O conteúdo da imagem não corresponde ao formato informado.",400);
-  await magickReady;
-  return ImageMagick.read(bytes,image=>{
-    if(image.width*image.height>12000000)throw new ApiError("A imagem excede 12 megapixels.",413);
-    image.autoOrient();
-    const ratio=Math.min(1,1800/Math.max(image.width,image.height));
-    if(ratio<1)image.resize(Math.max(1,Math.round(image.width*ratio)),Math.max(1,Math.round(image.height*ratio)));
-    image.strip();image.quality=82;
-    return image.write(MagickFormat.WebP,result=>Uint8Array.from(result));
-  });
+  try{assertImageDimensions(bytes);}catch(error){
+    const message=error instanceof Error?error.message:"Imagem inválida.";
+    throw new ApiError(message,message.includes("excede")?413:400);
+  }
+  await ensureMagick();
+  try{
+    return ImageMagick.read(bytes,image=>{
+      if(image.width>Math.floor(12000000/image.height))throw new ApiError("A imagem excede 12 megapixels.",413);
+      image.autoOrient();
+      const ratio=Math.min(1,1800/Math.max(image.width,image.height));
+      if(ratio<1)image.resize(Math.max(1,Math.round(image.width*ratio)),Math.max(1,Math.round(image.height*ratio)));
+      image.strip();image.quality=82;
+      return image.write(MagickFormat.WebP,result=>Uint8Array.from(result));
+    });
+  }catch(error){
+    if(error instanceof ApiError)throw error;
+    throw new ApiError("Não foi possível decodificar a imagem.",400);
+  }
 }
 async function submit(request:Request) {
   if(Number(request.headers.get("content-length")||0)>36*1024*1024)return reply({error:"Envio muito grande."},413);
@@ -94,19 +107,25 @@ async function promote(path:string,target:string) {
   if(up.error)throw new ApiError("Não foi possível preparar a imagem para publicação.",503);
   return {path:target,url:db.storage.from("public-media").getPublicUrl(target).data.publicUrl};
 }
-function publicObjectPath(value:unknown){
-  if(typeof value!=="string")return null;
-  try{
-    const parsed=new URL(value);const prefix="/storage/v1/object/public/public-media/";
-    if(parsed.origin!==url||!parsed.pathname.startsWith(prefix))return null;
-    return decodeURIComponent(parsed.pathname.slice(prefix.length));
-  }catch{return null;}
-}
-async function removePublicUrls(values:unknown[]){
-  const paths=[...new Set(values.map(publicObjectPath).filter((value):value is string=>Boolean(value)))];
-  if(!paths.length)return;
-  const{error}=await db.storage.from("public-media").remove(paths);
-  if(error)throw new ApiError("Não foi possível revogar as imagens públicas.",503);
+type CleanupRow={id:number;object_path:string;lease_token:string;attempts:number};
+async function retryPendingMediaCleanup(){
+  const queue=await db.rpc("claim_media_cleanup",{p_limit:100,p_lease_seconds:120});
+  if(queue.error){console.error("inovart-api",crypto.randomUUID(),"cleanup_queue_claim_failed");return false;}
+  const rows=(Array.isArray(queue.data)?queue.data:[]) as CleanupRow[];
+  if(!rows.length)return true;
+  const lease=rows[0].lease_token;
+  if(!lease||rows.some(row=>row.lease_token!==lease)){
+    console.error("inovart-api",crypto.randomUUID(),"cleanup_queue_lease_invalid");return false;
+  }
+  const paths=[...new Set(rows.map(row=>row.object_path))];
+  const removal=await db.storage.from("public-media").remove(paths);
+  const completion=await db.rpc("finish_media_cleanup",{
+    p_ids:rows.map(row=>row.id),p_lease_token:lease,p_error:removal.error?.message.slice(0,500)||null,
+  });
+  if(removal.error||completion.error||completion.data!==rows.length){
+    console.error("inovart-api",crypto.randomUUID(),"media_cleanup_pending");return false;
+  }
+  return true;
 }
 async function editorial(request:Request) {
   const token=(request.headers.get("authorization")||"").replace(/^Bearer /,"");
@@ -140,9 +159,7 @@ async function editorial(request:Request) {
     if(body.action==="archive"){
       const result=await caller.rpc("archive_editorial_record",{p_table:table,p_id:id});
       if(result.error)throw new ApiError("Não foi possível arquivar.",503);
-      const oldUrls=Array.isArray(result.data?.old_urls)?result.data.old_urls:[];
-      let cleanupPending=false;
-      try{await removePublicUrls(oldUrls);}catch{cleanupPending=true;console.error("inovart-api",crypto.randomUUID(),"archived_media_cleanup_pending");}
+      const cleanupPending=!(await retryPendingMediaCleanup());
       return reply({id,status:"archived",cleanup_pending:cleanupPending});
     }
     const version=crypto.randomUUID();
@@ -174,12 +191,18 @@ async function editorial(request:Request) {
       }
       const result=await caller.rpc("publish_editorial_record",{p_table:table,p_id:id,p_media:media});
       if(result.error)throw new ApiError("Não foi possível publicar.",503);
-      const oldUrls=Array.isArray(result.data?.old_urls)?result.data.old_urls:[];
-      let cleanupPending=false;
-      try{await removePublicUrls(oldUrls);}catch{cleanupPending=true;console.error("inovart-api",crypto.randomUUID(),"old_media_cleanup_pending");}
+      const cleanupPending=!(await retryPendingMediaCleanup());
       return reply({id,status:"published",cleanup_pending:cleanupPending});
     }catch(error){
-      if(createdPaths.length)await db.storage.from("public-media").remove(createdPaths);
+      if(createdPaths.length){
+        const removal=await db.storage.from("public-media").remove(createdPaths);
+        if(removal.error){
+          const queued=await db.rpc("enqueue_media_cleanup",{
+            p_paths:createdPaths,p_source_table:table,p_source_id:id,
+          });
+          if(queued.error)console.error("inovart-api",crypto.randomUUID(),"failed_publication_cleanup_enqueue_failed");
+        }
+      }
       throw error;
     }
   }
@@ -190,6 +213,11 @@ Deno.serve(async(request:Request)=>{
   try{
     if(!await checkProxy(request))return reply({error:"Acesso não autorizado."},401);
     const action=request.headers.get("x-inovart-action");
+    if(action==="health"){
+      await ensureMagick();
+      const cleanupPending=!(await retryPendingMediaCleanup());
+      return reply({ready:true,image_processor:true,cleanup_pending:cleanupPending});
+    }
     if(action==="submission")return await submit(request);
     if(action==="contact"){
       const data=await request.json();

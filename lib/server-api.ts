@@ -1,4 +1,5 @@
 import { SUPABASE_URL, SUPABASE_KEY } from "./supabase";
+import { createLimitedBodyStream } from "./request-stream";
 
 const bodyLimits: Record<string, number> = {
   submission: 36 * 1024 * 1024,
@@ -30,16 +31,23 @@ export async function forwardToBackend(request: Request, action: string) {
   };
   const auth = request.headers.get("authorization");
   if (auth) headers.Authorization = auth;
+  const limited = createLimitedBodyStream(request.body, bodyLimit);
+  const controller = new AbortController();
+  const relayAbort = () => controller.abort(request.signal.reason);
+  request.signal.addEventListener("abort", relayAbort, { once: true });
+  const timeout = setTimeout(() => controller.abort(new Error("backend timeout")), action === "submission" ? 60000 : 15000);
   try {
-    const body = await request.arrayBuffer();
-    if (body.byteLength > bodyLimit)
-      return Response.json({ error: "Envio muito grande." }, { status: 413 });
     const result = await fetch(`${SUPABASE_URL}/functions/v1/inovart-api`, {
-      method: "POST", headers, body, signal: AbortSignal.timeout(action === "submission" ? 60000 : 15000),
+      method: "POST", headers, body: limited.body, signal: controller.signal,
     });
     const json = await result.json().catch(() => ({})) as Record<string, unknown> & { error?: string };
     return Response.json(result.ok ? json : { error: json.error || "O arquivo está temporariamente indisponível." }, { status: result.status });
   } catch {
+    if (limited.exceeded())
+      return Response.json({ error: "Envio muito grande." }, { status: 413 });
     return Response.json({ error: "Não foi possível conectar ao arquivo. Seu formulário foi preservado." }, { status: 503 });
+  } finally {
+    clearTimeout(timeout);
+    request.signal.removeEventListener("abort", relayAbort);
   }
 }

@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "./safe-link";
 import { useRef, useState, type FormEvent } from "react";
 import { submissionSchema } from "@/lib/validation";
 import { apiRequest } from "@/lib/api-client";

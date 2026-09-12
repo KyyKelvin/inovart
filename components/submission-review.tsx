@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import Link from "next/link";
+import Link from "./safe-link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { adminRequest } from "@/lib/api-client";
