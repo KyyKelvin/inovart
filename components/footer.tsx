@@ -1,4 +1,14 @@
+"use client";
+
+import type { PointerEvent as ReactPointerEvent } from "react";
 import Link from "./safe-link";
+
+function moveFooterReveal(event: ReactPointerEvent<HTMLAnchorElement>) {
+  const { offsetX, offsetY } = event.nativeEvent;
+
+  event.currentTarget.style.setProperty("--footer-pointer-x", `${offsetX}px`);
+  event.currentTarget.style.setProperty("--footer-pointer-y", `${offsetY}px`);
+}
 
 export function Footer() {
   return (
@@ -35,7 +45,13 @@ export function Footer() {
           </div>
         </div>
 
-        <Link className="footer-title display" href="/" aria-label="Voltar ao início">
+        <Link
+          className="footer-title display"
+          href="/"
+          aria-label="Voltar ao início"
+          data-text="INOVART"
+          onPointerMove={moveFooterReveal}
+        >
           INOVART
         </Link>
 
