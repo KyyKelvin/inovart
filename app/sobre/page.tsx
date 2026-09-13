@@ -1,5 +1,4 @@
 import { Footer } from "@/components/footer";
-import { ModelArtifact } from "@/components/model-artifact";
 import { Window } from "@/components/window";
 
 export const metadata = { title: "Sobre" };
@@ -16,7 +15,6 @@ export default function Page() {
             </div>
             <p>O InovArt documenta o artesanato de Varginha como conhecimento vivo — não como catálogo genérico e não como loja.</p>
           </div>
-          <ModelArtifact scene="alien" label="Alienígena digital roxo em movimento" className="model-artifact--about" />
           <div className="cards">
             <Window label="01_presenca"><div style={{ padding: "2rem" }}><h2>Gente antes de produto.</h2><p style={{ color: "var(--muted)", lineHeight: 1.7 }}>Cada registro começa pela pessoa, pelo território e pelo modo de fazer.</p></div></Window>
             <Window label="02_contexto"><div style={{ padding: "2rem" }}><h2>Processo antes de tendência.</h2><p style={{ color: "var(--muted)", lineHeight: 1.7 }}>Materiais, gestos e transmissão de saberes recebem o mesmo espaço que o objeto final.</p></div></Window>

@@ -83,6 +83,7 @@ export function ModelArtifact({ scene, label, className = "" }: ModelArtifactPro
             "auto-rotate": !reduceMotion,
             "camera-controls": true,
             "disable-pan": true,
+            "disable-zoom": true,
             "interaction-prompt": "none",
             loading: "lazy",
             "touch-action": "pan-y",
