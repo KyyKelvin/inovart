@@ -62,8 +62,16 @@ test("renders each 3D object without an editorial panel", async () => {
     fileURLToPath(new URL("../app/page.tsx", import.meta.url)),
     "utf8",
   );
+  const hero = await readFile(
+    fileURLToPath(new URL("../components/hero.tsx", import.meta.url)),
+    "utf8",
+  );
   const about = await readFile(
     fileURLToPath(new URL("../app/sobre/page.tsx", import.meta.url)),
+    "utf8",
+  );
+  const styles = await readFile(
+    fileURLToPath(new URL("../app/refinements.css", import.meta.url)),
     "utf8",
   );
 
@@ -73,11 +81,16 @@ test("renders each 3D object without an editorial panel", async () => {
   assert.match(component, /"auto-rotate": !reduceMotion/);
   assert.match(component, /"disable-zoom": true/);
   assert.doesNotMatch(home, /model-scatter/);
-  assert.equal(home.match(/className="model-ornament/g)?.length, 6);
+  assert.equal(home.match(/className="model-ornament/g)?.length, 5);
+  assert.equal(hero.match(/className="model-ornament/g)?.length, 1);
   for (const scene of Object.keys(MODEL_SCENES).filter((name) => name.startsWith("metal"))) {
     assert.match(home, new RegExp(`scene="${scene}"`));
   }
-  assert.match(home, /scene="alien"/);
+  assert.doesNotMatch(home, /scene="alien"/);
+  assert.match(hero, /scene="alien"/);
+  assert.match(hero, /model-ornament--hero-alien/);
+  assert.match(styles, /\.model-ornament--hero-alien\s*\{[^}]*right:clamp\(1rem/);
+  assert.match(styles, /\.model-ornament--cross\s*\{[^}]*left:auto;[^}]*right:-/);
   assert.doesNotMatch(about, /scene="alien"/);
   assert.doesNotMatch(about, /ModelArtifact/);
 });
