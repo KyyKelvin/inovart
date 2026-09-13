@@ -22,13 +22,13 @@ test("uses the local GLTF objects with the pinned model viewer", async () => {
   }
 });
 
-test("keeps each 3D object inside the editorial panel", async () => {
+test("renders each 3D object without an editorial panel", async () => {
   const component = await readFile(
     fileURLToPath(new URL("../components/model-artifact.tsx", import.meta.url)),
     "utf8",
   );
 
-  assert.match(component, /model-artifact__stage/);
-  assert.match(component, /<figcaption/);
-  assert.match(component, /OBJETO_3D/);
+  assert.doesNotMatch(component, /model-artifact__stage/);
+  assert.doesNotMatch(component, /<figcaption/);
+  assert.doesNotMatch(component, /OBJETO_3D/);
 });
