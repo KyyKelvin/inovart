@@ -1,2 +1,30 @@
-import{Footer}from"@/components/footer";import{Window}from"@/components/window";
-export const metadata={title:"Sobre"};export default function Page(){return <main id="conteudo"><section className="section grid-noise"><div className="site-shell"><div className="section-head"><div><p className="eyebrow">Manifesto 03 / por que arquivar</p><h1>Sobre.</h1></div><p>O InovArt documenta o artesanato de Varginha como conhecimento vivo — não como catálogo genérico e não como loja.</p></div><div className="cards"><Window label="01_presenca"><div style={{padding:"2rem"}}><h2>Gente antes de produto.</h2><p style={{color:"var(--muted)",lineHeight:1.7}}>Cada registro começa pela pessoa, pelo território e pelo modo de fazer.</p></div></Window><Window label="02_contexto"><div style={{padding:"2rem"}}><h2>Processo antes de tendência.</h2><p style={{color:"var(--muted)",lineHeight:1.7}}>Materiais, gestos e transmissão de saberes recebem o mesmo espaço que o objeto final.</p></div></Window><Window label="03_consentimento"><div style={{padding:"2rem"}}><h2>Publicação com cuidado.</h2><p style={{color:"var(--muted)",lineHeight:1.7}}>Submissões passam por revisão editorial e consentimento antes de entrarem no acervo.</p></div></Window></div></div></section><Footer/></main>}
+import { Footer } from "@/components/footer";
+import { SplineArtifact } from "@/components/spline-artifact";
+import { Window } from "@/components/window";
+
+export const metadata = { title: "Sobre" };
+
+export default function Page() {
+  return (
+    <main id="conteudo">
+      <section className="section grid-noise">
+        <div className="site-shell">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Manifesto 03 / por que arquivar</p>
+              <h1>Sobre.</h1>
+            </div>
+            <p>O InovArt documenta o artesanato de Varginha como conhecimento vivo — não como catálogo genérico e não como loja.</p>
+          </div>
+          <SplineArtifact scene="materia" label="Matéria digital em transformação" className="spline-artifact--about" />
+          <div className="cards">
+            <Window label="01_presenca"><div style={{ padding: "2rem" }}><h2>Gente antes de produto.</h2><p style={{ color: "var(--muted)", lineHeight: 1.7 }}>Cada registro começa pela pessoa, pelo território e pelo modo de fazer.</p></div></Window>
+            <Window label="02_contexto"><div style={{ padding: "2rem" }}><h2>Processo antes de tendência.</h2><p style={{ color: "var(--muted)", lineHeight: 1.7 }}>Materiais, gestos e transmissão de saberes recebem o mesmo espaço que o objeto final.</p></div></Window>
+            <Window label="03_consentimento"><div style={{ padding: "2rem" }}><h2>Publicação com cuidado.</h2><p style={{ color: "var(--muted)", lineHeight: 1.7 }}>Submissões passam por revisão editorial e consentimento antes de entrarem no acervo.</p></div></Window>
+          </div>
+        </div>
+      </section>
+      <Footer />
+    </main>
+  );
+}
