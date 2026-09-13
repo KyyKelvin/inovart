@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { access } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
   MODEL_SCENES,
@@ -20,4 +20,15 @@ test("uses the local GLTF objects with the pinned model viewer", async () => {
   for (const modelUrl of Object.values(MODEL_SCENES)) {
     await access(fileURLToPath(new URL(`../public${modelUrl}`, import.meta.url)));
   }
+});
+
+test("keeps each 3D object inside the editorial panel", async () => {
+  const component = await readFile(
+    fileURLToPath(new URL("../components/model-artifact.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  assert.match(component, /model-artifact__stage/);
+  assert.match(component, /<figcaption/);
+  assert.match(component, /OBJETO_3D/);
 });
