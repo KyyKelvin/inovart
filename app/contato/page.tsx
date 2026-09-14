@@ -1,0 +1,2 @@
+import{Footer}from"@/components/footer";import{ContactForm}from"@/components/contact-form";
+export const metadata={title:"Contato"};export default function Page(){return <main id="conteudo"><section className="section grid-noise"><div className="site-shell"><div className="section-head"><div><p className="eyebrow">Canal 04 / conversa</p><h1>Contato.</h1></div><p>Para parcerias culturais, correções no arquivo, imprensa ou dúvidas sobre uma submissão.</p></div><ContactForm/></div></section><Footer/></main>}

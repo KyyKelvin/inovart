@@ -1,0 +1,1 @@
+export default function Loading() { return <main id="conteudo" className="site-shell section" role="status"><p className="eyebrow">Abrindo registro…</p><div className="archive-loading">Consultando o arquivo.</div></main>; }

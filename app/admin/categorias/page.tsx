@@ -1,0 +1,1 @@
+import{AdminCollection}from"@/components/admin-collection";export default function Page(){return <main id="conteudo"><section className="section"><div className="site-shell"><div className="section-head"><h1>Categorias.</h1><p>Vocabulário editorial para técnicas, materiais e saberes.</p></div><AdminCollection table="categories" title="categoria"/></div></section></main>}

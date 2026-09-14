@@ -1,0 +1,4 @@
+project_id = "test-artesao"
+[functions.inovart-api]
+verify_jwt = false
+# Custom server-to-server token is verified inside the function; admin JWTs are also checked with getUser().
