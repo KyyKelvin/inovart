@@ -9,9 +9,9 @@
   "scripts": {
     "install:ci": "node scripts/install-ci.mjs",
     "dev": "vinext dev --port 5173",
-    "build": "vinext build",
+    "build": "vite build",
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern graphify-out",
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern .vercel --ignore-pattern graphify-out",
     "db:generate": "drizzle-kit generate",
     "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
@@ -34,6 +34,7 @@
     "motion": "12.43.0",
     "next": "16.3.5",
     "next-themes": "^0.4.6",
+    "nitro": "3.0.260903-beta",
     "radix-ui": "^1.6.7",
     "react": "19.2.6",
     "react-day-picker": "^10.0.1",

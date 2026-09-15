@@ -48,6 +48,10 @@ next-env.d.ts
 /outputs/
 /work/
 
+# Temporary local packaging copies for the oversized 3D model
+/public/models/dark-metal/shared.bin.gz
+/public/models/dark-metal/shared.part-*.bin
+
 # Graphify reports are tracked; local indexes are regenerated.
 /graphify-out/cache/
 /graphify-out/.graphify_*.json

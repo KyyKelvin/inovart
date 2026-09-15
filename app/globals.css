@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss/index.css";
 @import "tw-animate-css";
 @import "../vendor/shadcn-tailwind-4.13.0.css";
 @font-face{font-family:"Geist";src:url("/fonts/geist-latin-400-normal.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
