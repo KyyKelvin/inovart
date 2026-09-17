@@ -1,22 +1,25 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase";
-const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "kelvinky.augusto@gmail.com").trim().toLowerCase();
 export function AdminLogin() {
   const [state, setState] = useState("");
   const [busy, setBusy] = useState(false);
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true);
-    const email = String(new FormData(event.currentTarget).get("email")).trim();
-    const { error } = await createClient().auth.signInWithOtp({
-      email, options: { shouldCreateUser: email.toLowerCase() === ADMIN_EMAIL, emailRedirectTo: `${location.origin}/auth/callback` },
+  async function signIn() {
+    setBusy(true);
+    const { error } = await createClient().auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+        queryParams: { prompt: "select_account" },
+      },
     });
-    setState(error ? "Não foi possível solicitar o acesso. Confira o e-mail autorizado e tente novamente." : "Se este e-mail estiver autorizado, você receberá um link de acesso. Confira também o spam.");
-    setBusy(false);
+    if (error) {
+      setState("Não foi possível iniciar o acesso com o Google. Tente novamente.");
+      setBusy(false);
+    }
   }
-  return <form className="window" onSubmit={submit}><div className="window-bar">acesso_editorial</div><div className="form-padding">
-    <div className="field"><label htmlFor="login-email">E-mail autorizado</label><input id="login-email" name="email" type="email" required autoComplete="email" /></div>
-    <button className="button primary section-action" disabled={busy}>{busy ? "Solicitando…" : "Enviar link de acesso →"}</button>
-    <p className="status" role="status">{state}</p><p className="muted">O acesso é individual, por link enviado ao seu e-mail.</p>
-  </div></form>;
+  return <div className="window"><div className="window-bar">acesso_editorial</div><div className="form-padding">
+    <button type="button" className="button primary section-action" disabled={busy} onClick={signIn}>{busy ? "Conectando…" : "Entrar com Google →"}</button>
+    <p className="status" role="status">{state}</p><p className="muted">Use uma conta Google autorizada pela equipe editorial.</p>
+  </div></div>;
 }

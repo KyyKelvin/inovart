@@ -15,7 +15,9 @@ O backend foi ativado em 11 de setembro de 2026 exclusivamente no projeto Supaba
 
 ## Acesso editorial
 
-O login administrativo continua fechado por desenho: `shouldCreateUser: false` impede cadastro público. Para liberar uma pessoa, um administrador do projeto precisa provisioná-la no Supabase Auth e definir `app_metadata.role = "admin"`. Essa etapa exige escolher explicitamente a conta editorial e confirmar a entrega do link mágico; não deve ser automatizada com uma identidade presumida.
+O login administrativo usa Google OAuth. Para liberar uma pessoa, um administrador do projeto precisa provisionar e confirmar a conta no Supabase Auth e definir `app_metadata.role = "admin"`. A interface, as políticas RLS e a Edge Function usam exclusivamente esse papel; e-mail não substitui autorização. Ao primeiro acesso com o Google, o Supabase vincula automaticamente a identidade à conta confirmada de mesmo e-mail.
+
+As contas editoriais autorizadas são `inovartpy@gmail.com` e `kelvinky.augusto@gmail.com`. Ambas devem manter `app_metadata.role = "admin"`.
 
 ## Publicação
 

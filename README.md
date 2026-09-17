@@ -18,7 +18,7 @@ O acervo público consulta Supabase. Conteúdo de demonstração aparece somente
 
 Públicas: início, artesãos, perfil de artesão, trabalhos, detalhe de trabalho, sobre, contato e participação.
 
-Editorial: login por link, fila de propostas, revisão com imagens privadas, edição de perfis/trabalhos/categorias e mensagens.
+Editorial: login com Google para contas previamente autorizadas, fila de propostas, revisão com imagens privadas, edição de perfis/trabalhos/categorias e mensagens.
 
 ## Estado da integração
 

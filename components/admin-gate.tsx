@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase";
 const nav = [["/admin", "Submissões"], ["/admin/artesaos", "Artesãos"], ["/admin/trabalhos", "Trabalhos"], ["/admin/categorias", "Categorias"], ["/admin/mensagens", "Mensagens"]];
-const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "kelvinky.augusto@gmail.com").trim().toLowerCase();
 export function AdminGate({ children }: { children: ReactNode }) {
   const path = usePathname();
   const [access, setAccess] = useState<"loading" | "admin" | "denied">("loading");
@@ -12,9 +11,7 @@ export function AdminGate({ children }: { children: ReactNode }) {
     const client = createClient();
     let active = true;
     const check = () => client.auth.getUser().then(({ data }) => {
-      const user = data.user;
-      const isAdmin = user?.app_metadata?.role === "admin" || user?.email?.toLowerCase() === ADMIN_EMAIL;
-      if (active) setAccess(isAdmin ? "admin" : "denied");
+      if (active) setAccess(data.user?.app_metadata?.role === "admin" ? "admin" : "denied");
     });
     void check();
     const { data: { subscription } } = client.auth.onAuthStateChange(() => { setTimeout(() => void check(), 0); });
