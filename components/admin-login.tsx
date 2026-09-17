@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase";
+const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "inovartpy@gmail.com").trim().toLowerCase();
 export function AdminLogin() {
   const [state, setState] = useState("");
   const [busy, setBusy] = useState(false);
@@ -8,7 +9,7 @@ export function AdminLogin() {
     event.preventDefault(); setBusy(true);
     const email = String(new FormData(event.currentTarget).get("email")).trim();
     const { error } = await createClient().auth.signInWithOtp({
-      email, options: { shouldCreateUser: false, emailRedirectTo: `${location.origin}/auth/callback` },
+      email, options: { shouldCreateUser: email.toLowerCase() === ADMIN_EMAIL, emailRedirectTo: `${location.origin}/auth/callback` },
     });
     setState(error ? "Não foi possível solicitar o acesso. Confira o e-mail autorizado e tente novamente." : "Se este e-mail estiver autorizado, você receberá um link de acesso. Confira também o spam.");
     setBusy(false);
