@@ -1,7 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase";
-const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "inovartpy@gmail.com").trim().toLowerCase();
+const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "kelvinky.augusto@gmail.com").trim().toLowerCase();
 export function AdminLogin() {
   const [state, setState] = useState("");
   const [busy, setBusy] = useState(false);
