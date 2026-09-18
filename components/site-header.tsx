@@ -27,6 +27,7 @@ export function SiteHeader() {
     };
   }, [open]);
 
+  if (pathname.startsWith("/admin")) return null;
   return (
     <header className="nav" ref={headerRef}>
       <div className="site-shell nav-inner">

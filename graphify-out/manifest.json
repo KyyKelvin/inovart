@@ -126,10 +126,10 @@
     "semantic_hash": "cbf823ea6a0ab30e9aca4454555dc64e"
   },
   "app/page.tsx": {
-    "mtime": 1789331696.742382,
-    "seen": 1789331947.0697224,
-    "ast_hash": "74b172904b2e8e8c2924383a1dc690ae",
-    "semantic_hash": "74b172904b2e8e8c2924383a1dc690ae"
+    "mtime": 1789333110.7915466,
+    "seen": 1789432589.5984943,
+    "ast_hash": "57ae1409f92368d474b5bd5cf5241af5",
+    "semantic_hash": ""
   },
   "app/participar/page.tsx": {
     "mtime": 1789091310.3751814,
@@ -210,16 +210,16 @@
     "semantic_hash": "45a7db1ff8a728cc3bf9bcec5dec4e07"
   },
   "components/footer.tsx": {
-    "mtime": 1789241254.5222852,
-    "seen": 1789307297.9929934,
-    "ast_hash": "75a1e8a7266cda6be26d778d12345131",
-    "semantic_hash": "75a1e8a7266cda6be26d778d12345131"
+    "mtime": 1789335888.9131625,
+    "seen": 1789432589.600435,
+    "ast_hash": "dd19863358217095b98179b7a252ba59",
+    "semantic_hash": ""
   },
   "components/hero.tsx": {
-    "mtime": 1789241255.6242871,
-    "seen": 1789307297.9929943,
-    "ast_hash": "d2c113ae719e3a254ef88519c8829bdd",
-    "semantic_hash": "d2c113ae719e3a254ef88519c8829bdd"
+    "mtime": 1789392822.7141273,
+    "seen": 1789432589.6004372,
+    "ast_hash": "f688f2ce4bcc23627b3ab654e058d9fe",
+    "semantic_hash": ""
   },
   "components/live-archive.tsx": {
     "mtime": 1789242023.5535562,
@@ -798,10 +798,10 @@
     "semantic_hash": "0f5c92b051f0a728cfb9ba3a57a4f2f7"
   },
   "tests/model-integration.test.mjs": {
-    "mtime": 1789331646.1090534,
-    "seen": 1789331947.0968506,
-    "ast_hash": "3d739a54041f692fc95d03bf34eec0e6",
-    "semantic_hash": "3d739a54041f692fc95d03bf34eec0e6"
+    "mtime": 1789333050.0937166,
+    "seen": 1789432589.6149883,
+    "ast_hash": "05752fbe0fe8e874e4b1514aa7835282",
+    "semantic_hash": ""
   },
   "tsconfig.json": {
     "mtime": 1789131123.2287853,
