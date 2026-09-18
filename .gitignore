@@ -56,3 +56,4 @@ next-env.d.ts
 /graphify-out/.graphify_root
 /graphify-out/.vocab.txt
 /graphify-out/20??-??-??/
+.env*

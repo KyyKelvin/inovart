@@ -1,5 +1,6 @@
 import { SUPABASE_URL, SUPABASE_KEY } from "./supabase";
 import { createLimitedBodyStream } from "./request-stream";
+import { createStreamingRequest } from "./streaming-request";
 
 const bodyLimits: Record<string, number> = {
   submission: 36 * 1024 * 1024,
@@ -37,9 +38,9 @@ export async function forwardToBackend(request: Request, action: string) {
   request.signal.addEventListener("abort", relayAbort, { once: true });
   const timeout = setTimeout(() => controller.abort(new Error("backend timeout")), action === "submission" ? 60000 : 15000);
   try {
-    const result = await fetch(`${SUPABASE_URL}/functions/v1/inovart-api`, {
+    const result = await fetch(createStreamingRequest(`${SUPABASE_URL}/functions/v1/inovart-api`, {
       method: "POST", headers, body: limited.body, signal: controller.signal,
-    });
+    }));
     const json = await result.json().catch(() => ({})) as Record<string, unknown> & { error?: string };
     return Response.json(result.ok ? json : { error: json.error || "O arquivo está temporariamente indisponível." }, { status: result.status });
   } catch {

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { contactSchema, submissionSchema, editorialSchema, slugify, identifyImage, readImageDimensions, assertImageDimensions } from "../supabase/functions/_shared/validation.ts";
 import { createLimitedBodyStream } from "../lib/request-stream.ts";
+import { createStreamingRequest } from "../lib/streaming-request.ts";
 
 const png=(width,height,ihdrLength=13)=>{
   const bytes=new Uint8Array(33);
@@ -96,6 +97,12 @@ test("streams request bodies up to the exact limit and stops oversized chunks", 
   const oversized=createLimitedBodyStream(stream([[1,2],[3,4,5]]),4);
   await assert.rejects(()=>new Response(oversized.body).arrayBuffer(),/request body limit exceeded/);
   assert.equal(oversized.exceeded(),true);
+});
+test("constructs a Node-compatible request from a streamed body", async () => {
+  const body=new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode("{}"));controller.close();}});
+  const request=createStreamingRequest("https://example.com/api",{method:"POST",body});
+  assert.equal(request.method,"POST");
+  assert.equal(await request.text(),"{}");
 });
 test("editorial saves cannot directly change publication status", () => {
   const parsed = editorialSchema.parse({table:"categories",values:{name:"Cerâmica",slug:"ceramica",description:"Peças artesanais em cerâmica.",status:"published"}});
