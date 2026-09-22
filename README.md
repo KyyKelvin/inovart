@@ -1,6 +1,7 @@
 # InovArt
 
-Arquivo cultural de artesãos e trabalhos de Varginha, baseado no guia visual fornecido. Atualmente hospedado em https://inovart-phi.vercel.app/. Projeto local **test-artesao**.
+Arquivo cultural de artesãos e trabalhos de Varginha, baseado no guia visual fornecido. 
+Atualmente hospedado em https://inovart-phi.vercel.app/.
 
 ## Desenvolvimento
 
