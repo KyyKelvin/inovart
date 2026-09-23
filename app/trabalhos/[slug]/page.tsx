@@ -43,12 +43,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <section className="section grid-noise work-detail-section">
         <div className="site-shell work-detail-shell">
           <Link className="text-link mono" href="/trabalhos">
-            ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Todos os trabalhos
+            ← Todos os trabalhos
           </Link>
 
           {demo && (
             <p className="demo-note">
-              Estudo demonstrativo Ãƒâ€šÃ‚Â· objeto e autoria aguardam registro real
+              Estudo demonstrativo · objeto e autoria aguardam registro real
             </p>
           )}
 
@@ -57,7 +57,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
               <XpImageFrame
                 className="xp-image-frame--work"
                 label="registro_do_trabalho.webp"
-                status={`${title} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ visualizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o 100%`}
+                status={`${title} • visualização 100%`}
               >
                 {image ? (
                   <img
@@ -112,29 +112,29 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
               <p className="work-detail-description">
                 {work?.description ||
-                  "EspaÃƒÆ’Ã‚Â§o reservado ÃƒÆ’Ã‚Â  histÃƒÆ’Ã‚Â³ria da peÃƒÆ’Ã‚Â§a, ao processo e ÃƒÆ’Ã‚Â s escolhas de quem a produziu."}
+                  "Espaço reservado à história da peça, ao processo e às escolhas de quem a produziu."}
               </p>
 
               <dl className="work-detail-record">
                 <div>
                   <dt>Materialidade</dt>
-                  <dd>{materials.join(" Ãƒâ€šÃ‚Â· ")}</dd>
+                  <dd>{materials.join(" · ")}</dd>
                 </div>
                 <div>
                   <dt>Ano</dt>
                   <dd>{work?.year || "Em coleta"}</dd>
                 </div>
                 <div>
-                  <dt>PreÃƒÆ’Ã‚Â§o</dt>
+                  <dt>Preço</dt>
                   <dd>{formatBrlFromCents(work?.price_cents)}</dd>
                 </div>
                 <div>
                   <dt>Envio / retirada</dt>
-                  <dd>{work?.shipping_details || "A combinar com o artesÃƒÆ’Ã‚Â£o"}</dd>
+                  <dd>{work?.shipping_details || "A combinar com o artesão"}</dd>
                 </div>
                 {categories.length > 0 && (
                   <div className="work-detail-record-wide">
-                    <dt>TerritÃƒÆ’Ã‚Â³rio de fazer</dt>
+                    <dt>Território de fazer</dt>
                     <dd className="work-detail-chips">
                       {categories.map((category) => (
                         <span className="chip" key={category}>
@@ -148,11 +148,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
               {work?.artisans && (
                 <Link className="button primary work-detail-author" href={`/artesaos/${work.artisans.slug}`}>
-                  Conhecer {work.artisans.name} ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â€
+                  Conhecer {work.artisans.name} ↗
                 </Link>
               )}
 
-              <p className="mono work-detail-index">Objeto catalogado / InovArt Varginha ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â MG</p>
+              <p className="mono work-detail-index">Objeto catalogado / InovArt Varginha — MG</p>
             </article>
           </div>
         </div>

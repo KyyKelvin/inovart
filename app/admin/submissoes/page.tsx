@@ -1,6 +1,6 @@
 import { AdminDashboard } from "@/components/admin-dashboard";
 
-export const metadata = { title: "SolicitaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes" };
+export const metadata = { title: "Solicitações" };
 
 export default function Page() {
   return (
@@ -10,10 +10,10 @@ export default function Page() {
           <div className="section-head">
             <div>
               <p className="eyebrow">Backoffice 01 / triagem</p>
-              <h1>SolicitaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes.</h1>
+              <h1>Solicitações.</h1>
             </div>
             <p>
-              Cada proposta passa por revisÃƒÆ’Ã‚Â£o antes de criar rascunhos de perfil e produtos no arquivo.
+              Cada proposta passa por revisão antes de criar rascunhos de perfil e produtos no arquivo.
             </p>
           </div>
           <AdminDashboard />

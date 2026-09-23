@@ -48,7 +48,7 @@ export function AdminCollection({ table, title }: { table: Table; title: string 
   const [categories, setCategories] = useState<Row[]>([]);
   const [artisans, setArtisans] = useState<Row[]>([]);
   const [selected, setSelected] = useState<Row | null>(null);
-  const [message, setMessage] = useState("Consultando registrosÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦");
+  const [message, setMessage] = useState("Consultando registros…");
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -70,7 +70,7 @@ export function AdminCollection({ table, title }: { table: Table; title: string 
     setArtisans((people.data || []) as Row[]);
     setMessage(
       records.error
-        ? "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel consultar os registros."
+        ? "Não foi possível consultar os registros."
         : `${records.data?.length || 0} registros.`,
     );
   }, [table]);
@@ -85,7 +85,7 @@ export function AdminCollection({ table, title }: { table: Table; title: string 
     try {
       if (action === "delete") {
         await adminRequest("delete_category", { id: row.id });
-        setMessage("Categoria excluÃƒÆ’Ã‚Â­da. Os menus de ofÃƒÆ’Ã‚Â­cio jÃƒÆ’Ã‚Â¡ foram sincronizados.");
+        setMessage("Categoria excluída. Os menus de ofício já foram sincronizados.");
       } else {
         const result = await adminRequest<{ cleanup_pending?: boolean }>(action, {
           table,
@@ -94,14 +94,14 @@ export function AdminCollection({ table, title }: { table: Table; title: string 
         const confirmation = action === "publish" ? "Registro publicado." : "Registro arquivado.";
         setMessage(
           result.cleanup_pending
-            ? `${confirmation} As imagens antigas aguardam a limpeza automÃƒÆ’Ã‚Â¡tica.`
+            ? `${confirmation} As imagens antigas aguardam a limpeza automática.`
             : confirmation,
         );
       }
       setPendingAction(null);
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel alterar o registro.");
+      setMessage(error instanceof Error ? error.message : "Não foi possível alterar o registro.");
     } finally {
       setBusy(false);
     }
@@ -148,14 +148,14 @@ export function AdminCollection({ table, title }: { table: Table; title: string 
         <AlertDialogContent className="window editorial-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {actionLabel} ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ{pendingAction?.row.name || pendingAction?.row.title}ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â?
+              {actionLabel} “{pendingAction?.row.name || pendingAction?.row.title}”?
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingAction?.action === "publish"
-                ? "O registro e suas imagens aprovadas passarÃƒÆ’Ã‚Â£o a aparecer no arquivo pÃƒÆ’Ã‚Âºblico."
+                ? "O registro e suas imagens aprovadas passarão a aparecer no arquivo público."
                 : pendingAction?.action === "archive"
-                  ? "O registro deixarÃƒÆ’Ã‚Â¡ de aparecer no arquivo pÃƒÆ’Ã‚Âºblico. Esta aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o pode ser revertida."
-                  : "A categoria sairÃƒÆ’Ã‚Â¡ dos menus de ofÃƒÆ’Ã‚Â­cio e das relaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes editoriais. O nome histÃƒÆ’Ã‚Â³rico jÃƒÆ’Ã‚Â¡ gravado nos perfis serÃƒÆ’Ã‚Â¡ preservado."}
+                  ? "O registro deixará de aparecer no arquivo público. Esta ação pode ser revertida."
+                  : "A categoria sairá dos menus de ofício e das relações editoriais. O nome histórico já gravado nos perfis será preservado."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -169,7 +169,7 @@ export function AdminCollection({ table, title }: { table: Table; title: string 
                 if (pendingAction) void runAction(pendingAction);
               }}
             >
-              {busy ? "SalvandoÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" : `Confirmar ${actionLabel.toLowerCase()}`}
+              {busy ? "Salvando…" : `Confirmar ${actionLabel.toLowerCase()}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -260,7 +260,7 @@ function CollectionEditor({
     if (table === "works") {
       const price = parseBrlToCents(data.get("price"));
       if (price === -1) {
-        setMessage("Informe um preÃƒÆ’Ã‚Â§o vÃƒÆ’Ã‚Â¡lido, com no mÃƒÆ’Ã‚Â¡ximo duas casas decimais.");
+        setMessage("Informe um preço válido, com no máximo duas casas decimais.");
         (form.elements.namedItem("price") as HTMLElement | null)?.focus();
         return;
       }
@@ -279,7 +279,7 @@ function CollectionEditor({
       await adminRequest("save", { table, id: row.id || undefined, values });
       await onSaved();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel salvar.");
+      setMessage(error instanceof Error ? error.message : "Não foi possível salvar.");
     } finally {
       setBusy(false);
     }
@@ -290,7 +290,7 @@ function CollectionEditor({
       <div className="window-bar">{row.id ? "Editar registro" : "Novo rascunho"}</div>
       <fieldset className="form-grid form-padding form-reset" disabled={busy}>
         <div className="field">
-          <label htmlFor="editor-name">{table === "works" ? "TÃƒÆ’Ã‚Â­tulo" : "Nome"} *</label>
+          <label htmlFor="editor-name">{table === "works" ? "Título" : "Nome"} *</label>
           <input
             id="editor-name"
             name={label}
@@ -301,7 +301,7 @@ function CollectionEditor({
           />
         </div>
         <div className="field">
-          <label htmlFor="editor-slug">EndereÃƒÆ’Ã‚Â§o curto</label>
+          <label htmlFor="editor-slug">Endereço curto</label>
           <input
             id="editor-slug"
             name="slug"
@@ -315,7 +315,7 @@ function CollectionEditor({
         {table === "artisans" && (
           <>
             <div className="field">
-              <label htmlFor="editor-craft">OfÃƒÆ’Ã‚Â­cio *</label>
+              <label htmlFor="editor-craft">Ofício *</label>
               <select
                 id="editor-craft"
                 name="craft_category_id"
@@ -333,14 +333,14 @@ function CollectionEditor({
               </select>
             </div>
             <div className="field">
-              <label htmlFor="editor-neighborhood">Bairro / regiÃƒÆ’Ã‚Â£o</label>
+              <label htmlFor="editor-neighborhood">Bairro / região</label>
               <input
                 id="editor-neighborhood"
                 name="neighborhood"
                 defaultValue={row.neighborhood || ""}
                 maxLength={120}
                 disabled={regionWithheld}
-                placeholder={regionWithheld ? "InformaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o preservada" : "Ex.: Centro"}
+                placeholder={regionWithheld ? "Informação preservada" : "Ex.: Centro"}
               />
             </div>
             <label className="full check-row">
@@ -350,10 +350,10 @@ function CollectionEditor({
                 checked={regionWithheld}
                 onChange={(event) => setRegionWithheld(event.target.checked)}
               />
-              RegiÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o informada por escolha do artesÃƒÆ’Ã‚Â£o
+              Região não informada por escolha do artesão
             </label>
             <div className="field full">
-              <label htmlFor="editor-bio">HistÃƒÆ’Ã‚Â³ria *</label>
+              <label htmlFor="editor-bio">História *</label>
               <textarea
                 id="editor-bio"
                 name="bio"
@@ -364,7 +364,7 @@ function CollectionEditor({
               />
             </div>
             <div className="field full">
-              <label htmlFor="editor-quote">CitaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o</label>
+              <label htmlFor="editor-quote">Citação</label>
               <textarea id="editor-quote" name="quote" defaultValue={row.quote || ""} maxLength={500} />
             </div>
           </>
@@ -375,7 +375,7 @@ function CollectionEditor({
             <div className="field">
               <label htmlFor="editor-artisan">Autoria *</label>
               <select id="editor-artisan" name="artisan_id" defaultValue={row.artisan_id || ""} required>
-                <option value="">Escolha um artesÃƒÆ’Ã‚Â£o</option>
+                <option value="">Escolha um artesão</option>
                 {artisans.map((artisan) => (
                   <option key={artisan.id} value={artisan.id}>
                     {artisan.name}
@@ -395,7 +395,7 @@ function CollectionEditor({
               />
             </div>
             <div className="field">
-              <label htmlFor="editor-price">PreÃƒÆ’Ã‚Â§o em R$</label>
+              <label htmlFor="editor-price">Preço em R$</label>
               <input
                 id="editor-price"
                 name="price"
@@ -412,11 +412,11 @@ function CollectionEditor({
                 name="shipping_details"
                 defaultValue={row.shipping_details || ""}
                 maxLength={500}
-                placeholder="Ex.: retirada no ateliÃƒÆ’Ã‚Âª"
+                placeholder="Ex.: retirada no ateliê"
               />
             </div>
             <div className="field full">
-              <label htmlFor="editor-materials">Materiais (separados por vÃƒÆ’Ã‚Â­rgula)</label>
+              <label htmlFor="editor-materials">Materiais (separados por vírgula)</label>
               <input
                 id="editor-materials"
                 name="materials"
@@ -428,7 +428,7 @@ function CollectionEditor({
 
         {table !== "artisans" && (
           <div className="field full">
-            <label htmlFor="editor-description">DescriÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o *</label>
+            <label htmlFor="editor-description">Descrição *</label>
             <textarea
               id="editor-description"
               name="description"
@@ -461,14 +461,14 @@ function CollectionEditor({
             </fieldset>
             <label className="full check-row">
               <input name="featured" type="checkbox" defaultChecked={row.featured} />
-              Destacar na pÃƒÆ’Ã‚Â¡gina inicial
+              Destacar na página inicial
             </label>
           </>
         )}
 
         <div className="full actions">
           <button className="button primary" type="submit">
-            {busy ? "SalvandoÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" : "Salvar registro"}
+            {busy ? "Salvando…" : "Salvar registro"}
           </button>
           <button className="button" type="button" onClick={onClose}>
             Cancelar

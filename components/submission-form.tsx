@@ -19,7 +19,7 @@ export function SubmissionForm() {
   const [received, setReceived] = useState(false);
   const [invalidField, setInvalidField] = useState("");
   const [crafts, setCrafts] = useState<CraftOption[]>([]);
-  const [craftStatus, setCraftStatus] = useState("Carregando ofÃƒÆ’Ã‚Â­cios disponÃƒÆ’Ã‚Â­veisÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦");
+  const [craftStatus, setCraftStatus] = useState("Carregando ofícios disponíveis…");
   const [regionWithheld, setRegionWithheld] = useState(false);
 
   useEffect(() => {
@@ -34,10 +34,10 @@ export function SubmissionForm() {
         setCrafts(options);
         setCraftStatus(
           error
-            ? "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel consultar os ofÃƒÆ’Ã‚Â­cios. Recarregue a pÃƒÆ’Ã‚Â¡gina."
+            ? "Não foi possível consultar os ofícios. Recarregue a página."
             : options.length
-              ? "Lista sincronizada com o catÃƒÆ’Ã‚Â¡logo editorial."
-              : "Nenhum ofÃƒÆ’Ã‚Â­cio estÃƒÆ’Ã‚Â¡ disponÃƒÆ’Ã‚Â­vel no momento.",
+              ? "Lista sincronizada com o catálogo editorial."
+              : "Nenhum ofício está disponível no momento.",
         );
       });
     return () => {
@@ -86,7 +86,7 @@ export function SubmissionForm() {
           : String(path[0] || "bio");
       setInvalidField(field);
       setState(
-        "Confira os campos obrigatÃƒÆ’Ã‚Â³rios, o preÃƒÆ’Ã‚Â§o informado e os limites de texto antes de continuar.",
+        "Confira os campos obrigatórios, o preço informado e os limites de texto antes de continuar.",
       );
       requestAnimationFrame(() =>
         (form.elements.namedItem(field) as HTMLElement | null)?.focus(),
@@ -98,7 +98,7 @@ export function SubmissionForm() {
       if (!(value instanceof File) || !value.size) continue;
       if (!accepted.includes(value.type) || value.size > 5 * 1024 * 1024) {
         setInvalidField(field);
-        setState(`A imagem "${value.name}" precisa ser JPEG, PNG ou WebP e ter atÃƒÆ’Ã‚Â© 5 MB.`);
+        setState(`A imagem "${value.name}" precisa ser JPEG, PNG ou WebP e ter até 5 MB.`);
         requestAnimationFrame(() =>
           (form.elements.namedItem(field) as HTMLElement | null)?.focus(),
         );
@@ -121,19 +121,19 @@ export function SubmissionForm() {
     }
 
     setBusy(true);
-    setState("Enviando seu material para avaliaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£oÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦");
+    setState("Enviando seu material para avaliação…");
     try {
       await apiRequest("/api/submissions", payload);
       form.reset();
       setRegionWithheld(false);
       setWorkCount(1);
       setReceived(true);
-      setState("Recebemos seu material. A equipe vai revisar sua proposta antes da publicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.");
+      setState("Recebemos seu material. A equipe vai revisar sua proposta antes da publicação.");
     } catch (error) {
       setState(
         error instanceof Error
           ? error.message
-          : "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel enviar. Seus campos foram preservados.",
+          : "Não foi possível enviar. Seus campos foram preservados.",
       );
     } finally {
       setBusy(false);
@@ -147,7 +147,7 @@ export function SubmissionForm() {
         <h2>Obrigado por compartilhar seu fazer.</h2>
         <p>{state}</p>
         <Link className="button" href="/artesaos">
-          Explorar o arquivo ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
+          Explorar o arquivo →
         </Link>
       </div>
     );
@@ -162,7 +162,7 @@ export function SubmissionForm() {
       }}
     >
       <div className="window-bar">
-        formulario_participacao.v2 <span>* obrigatÃƒÆ’Ã‚Â³rio</span>
+        formulario_participacao.v2 <span>* obrigatório</span>
       </div>
       <fieldset disabled={busy} className="form-grid form-padding form-reset">
         <div className="field">
@@ -179,7 +179,7 @@ export function SubmissionForm() {
           />
         </div>
         <div className="field">
-          <label htmlFor="craft_category_id">OfÃƒÆ’Ã‚Â­cio / tÃƒÆ’Ã‚Â©cnica *</label>
+          <label htmlFor="craft_category_id">Ofício / técnica *</label>
           <select
             id="craft_category_id"
             name="craft_category_id"
@@ -190,7 +190,7 @@ export function SubmissionForm() {
             aria-describedby="craft-status"
           >
             <option value="" disabled>
-              Selecione um ofÃƒÆ’Ã‚Â­cio
+              Selecione um ofício
             </option>
             {crafts.map((craft) => (
               <option key={craft.id} value={craft.id}>
@@ -203,13 +203,13 @@ export function SubmissionForm() {
           </small>
         </div>
         <div className="field">
-          <label htmlFor="neighborhood">Bairro / regiÃƒÆ’Ã‚Â£o</label>
+          <label htmlFor="neighborhood">Bairro / região</label>
           <input
             id="neighborhood"
             name="neighborhood"
             maxLength={120}
             disabled={regionWithheld}
-            placeholder={regionWithheld ? "InformaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o preservada" : "Ex.: Centro"}
+            placeholder={regionWithheld ? "Informação preservada" : "Ex.: Centro"}
             aria-invalid={invalidField === "neighborhood" || undefined}
             aria-describedby={invalidField === "neighborhood" ? "submission-status" : undefined}
           />
@@ -221,7 +221,7 @@ export function SubmissionForm() {
             checked={regionWithheld}
             onChange={(event) => setRegionWithheld(event.target.checked)}
           />
-          Prefiro nÃƒÆ’Ã‚Â£o informar publicamente minha regiÃƒÆ’Ã‚Â£o.
+          Prefiro não informar publicamente minha região.
         </label>
         <div className="field">
           <label htmlFor="email">E-mail *</label>
@@ -245,22 +245,22 @@ export function SubmissionForm() {
           <input id="instagram" name="instagram" placeholder="@usuario" maxLength={100} />
         </div>
         <div className="field full">
-          <label htmlFor="bio">Sua histÃƒÆ’Ã‚Â³ria e seu processo *</label>
+          <label htmlFor="bio">Sua história e seu processo *</label>
           <textarea
             id="bio"
             name="bio"
             required
             minLength={40}
             maxLength={3000}
-            placeholder="Como vocÃƒÆ’Ã‚Âª comeÃƒÆ’Ã‚Â§ou? Quais materiais, gestos e saberes fazem parte do seu trabalho?"
+            placeholder="Como você começou? Quais materiais, gestos e saberes fazem parte do seu trabalho?"
             aria-invalid={invalidField === "bio" || undefined}
             aria-describedby={invalidField === "bio" ? "submission-status" : undefined}
           />
         </div>
         <div className="field full">
-          <label htmlFor="portrait">Retrato autorizado Ãƒâ€šÃ‚Â· atÃƒÆ’Ã‚Â© 5 MB</label>
+          <label htmlFor="portrait">Retrato autorizado · até 5 MB</label>
           <input id="portrait" name="portrait" type="file" accept={accepted.join(",")} />
-          <small>JPEG, PNG ou WebP. As fotografias sÃƒÆ’Ã‚Â³ serÃƒÆ’Ã‚Â£o publicadas apÃƒÆ’Ã‚Â³s revisÃƒÆ’Ã‚Â£o.</small>
+          <small>JPEG, PNG ou WebP. As fotografias só serão publicadas após revisão.</small>
         </div>
 
         {Array.from({ length: workCount }, (_, index) => (
@@ -268,7 +268,7 @@ export function SubmissionForm() {
             <legend className="mono">Trabalho {index + 1}</legend>
             <div className="form-grid">
               <div className="field">
-                <label htmlFor={`work_title_${index}`}>TÃƒÆ’Ã‚Â­tulo *</label>
+                <label htmlFor={`work_title_${index}`}>Título *</label>
                 <input
                   id={`work_title_${index}`}
                   name={`work_title_${index}`}
@@ -279,7 +279,7 @@ export function SubmissionForm() {
                 />
               </div>
               <div className="field">
-                <label htmlFor={`work_materials_${index}`}>Materiais, separados por vÃƒÆ’Ã‚Â­rgula</label>
+                <label htmlFor={`work_materials_${index}`}>Materiais, separados por vírgula</label>
                 <input
                   id={`work_materials_${index}`}
                   name={`work_materials_${index}`}
@@ -287,7 +287,7 @@ export function SubmissionForm() {
                 />
               </div>
               <div className="field">
-                <label htmlFor={`work_price_${index}`}>PreÃƒÆ’Ã‚Â§o em R$</label>
+                <label htmlFor={`work_price_${index}`}>Preço em R$</label>
                 <input
                   id={`work_price_${index}`}
                   name={`work_price_${index}`}
@@ -296,7 +296,7 @@ export function SubmissionForm() {
                   maxLength={15}
                   aria-invalid={invalidField === `work_price_${index}` || undefined}
                 />
-                <small>Deixe vazio para exibir ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œSob consultaÃƒÂ¢Ã¢â€šÂ¬Ã‚Â.</small>
+                <small>Deixe vazio para exibir “Sob consulta”.</small>
               </div>
               <div className="field">
                 <label htmlFor={`work_shipping_${index}`}>Envio ou retirada</label>
@@ -304,12 +304,12 @@ export function SubmissionForm() {
                   id={`work_shipping_${index}`}
                   name={`work_shipping_${index}`}
                   maxLength={500}
-                  placeholder="Ex.: retirada no ateliÃƒÆ’Ã‚Âª ou envio para todo o Brasil"
+                  placeholder="Ex.: retirada no ateliê ou envio para todo o Brasil"
                   aria-invalid={invalidField === `work_shipping_${index}` || undefined}
                 />
               </div>
               <div className="field full">
-                <label htmlFor={`work_description_${index}`}>DescriÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o *</label>
+                <label htmlFor={`work_description_${index}`}>Descrição *</label>
                 <textarea
                   id={`work_description_${index}`}
                   name={`work_description_${index}`}
@@ -322,7 +322,7 @@ export function SubmissionForm() {
               {[0, 1].map((photo) => (
                 <div className="field" key={photo}>
                   <label htmlFor={`work_image_${index}_${photo}`}>
-                    Imagem {photo + 1} Ãƒâ€šÃ‚Â· atÃƒÆ’Ã‚Â© 5 MB
+                    Imagem {photo + 1} · até 5 MB
                   </label>
                   <input
                     id={`work_image_${index}_${photo}`}
@@ -345,14 +345,14 @@ export function SubmissionForm() {
           )}
           {workCount > 1 && (
             <button className="button" type="button" onClick={() => setWorkCount((count) => count - 1)}>
-              Remover ÃƒÆ’Ã‚Âºltimo trabalho
+              Remover último trabalho
             </button>
           )}
         </div>
 
         <fieldset className="full work-fieldset">
-          <legend className="mono">Contatos no perfil pÃƒÆ’Ã‚Âºblico</legend>
-          <p className="muted">Marque apenas os canais que vocÃƒÆ’Ã‚Âª autoriza divulgar.</p>
+          <legend className="mono">Contatos no perfil público</legend>
+          <p className="muted">Marque apenas os canais que você autoriza divulgar.</p>
           {[
             ["public_email", "Divulgar e-mail"],
             ["public_phone", "Divulgar telefone"],
@@ -372,12 +372,12 @@ export function SubmissionForm() {
         </div>
         <label className="full check-row">
           <input type="checkbox" required name="consent" />
-          Autorizo a avaliaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o editorial e a publicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o dos dados e imagens enviados no InovArt.
-          Declaro ter autorizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o para compartilhar esse material.
+          Autorizo a avaliação editorial e a publicação dos dados e imagens enviados no InovArt.
+          Declaro ter autorização para compartilhar esse material.
         </label>
         <div className="full">
           <button className="button primary" disabled={busy || !crafts.length}>
-            {busy ? "EnviandoÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" : "Enviar para avaliaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢"}
+            {busy ? "Enviando…" : "Enviar para avaliação →"}
           </button>
         </div>
       </fieldset>

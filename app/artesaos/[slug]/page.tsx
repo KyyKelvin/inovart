@@ -24,18 +24,18 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     channels = c.data || [];
   }
   return <main id="conteudo"><section className="section grid-noise artisan-profile-section"><div className="site-shell artisan-profile-shell">
-    <Link className="text-link mono" href="/artesaos">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Todos os artesÃƒÆ’Ã‚Â£os</Link>
-    {demo && <p className="demo-note">Perfil demonstrativo Ãƒâ€šÃ‚Â· nome e imagem aguardam registro real</p>}
+    <Link className="text-link mono" href="/artesaos">← Todos os artesãos</Link>
+    {demo && <p className="demo-note">Perfil demonstrativo · nome e imagem aguardam registro real</p>}
     <div className="profile-layout artisan-profile-layout">
       <Window label="retrato_autorizado.webp" className="artisan-profile-window">{image ? <img className="profile-image artisan-profile-image" src={image} alt={`Retrato de ${name}`} decoding="async" /> : <div className="card-visual profile-placeholder artisan-profile-placeholder" data-code="imagem pendente" />}</Window>
-      <div className="profile-copy"><p className="eyebrow">{artisan?.region_withheld ? "RegiÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o informada" : artisan?.neighborhood || "Varginha Ãƒâ€šÃ‚Â· MG"}</p><h1>{name}</h1><p className="craft-label">{artisan?.craft || demo!.craft}</p><p className="preserve-lines">{artisan?.bio || "Este perfil demonstra como a trajetÃƒÆ’Ã‚Â³ria, os materiais e o territÃƒÆ’Ã‚Â³rio serÃƒÆ’Ã‚Â£o apresentados. A histÃƒÆ’Ã‚Â³ria real serÃƒÆ’Ã‚Â¡ publicada apÃƒÆ’Ã‚Â³s consentimento e revisÃƒÆ’Ã‚Â£o editorial."}</p>
-        {artisan?.quote && <blockquote>ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ{artisan.quote}ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</blockquote>}
+      <div className="profile-copy"><p className="eyebrow">{artisan?.region_withheld ? "Região não informada" : artisan?.neighborhood || "Varginha · MG"}</p><h1>{name}</h1><p className="craft-label">{artisan?.craft || demo!.craft}</p><p className="preserve-lines">{artisan?.bio || "Este perfil demonstra como a trajetória, os materiais e o território serão apresentados. A história real será publicada após consentimento e revisão editorial."}</p>
+        {artisan?.quote && <blockquote>“{artisan.quote}”</blockquote>}
         {channels.length > 0 && <div className="actions">{channels.map(c => {
           const href = c.kind === "email" ? `mailto:${c.value.replace(/[\r\n]/g, "")}` : c.kind === "phone" ? `tel:${c.value.replace(/[^+0-9]/g, "")}` : `https://instagram.com/${encodeURIComponent(c.value.replace(/^@/, ""))}`;
-          return <a key={c.kind} className="button" href={href} rel="noopener noreferrer">{c.kind === "instagram" ? "Instagram ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â€" : c.value}</a>;
+          return <a key={c.kind} className="button" href={href} rel="noopener noreferrer">{c.kind === "instagram" ? "Instagram ↗" : c.value}</a>;
         })}</div>}
       </div>
     </div>
-    {works.length > 0 && <section className="section"><p className="eyebrow">Trabalhos do arquivo</p><div className="cards">{works.map(w => <Link href={`/trabalhos/${w.slug}`} key={w.id} className="card">{safeMediaUrl(w.cover_url) ? <div className="media-frame"><img src={safeMediaUrl(w.cover_url)!} alt={w.title} loading="lazy" decoding="async" /></div> : <div className="card-visual" />}<h2>{w.title}</h2><p>{w.materials.join(" Ãƒâ€šÃ‚Â· ")}</p></Link>)}</div></section>}
+    {works.length > 0 && <section className="section"><p className="eyebrow">Trabalhos do arquivo</p><div className="cards">{works.map(w => <Link href={`/trabalhos/${w.slug}`} key={w.id} className="card">{safeMediaUrl(w.cover_url) ? <div className="media-frame"><img src={safeMediaUrl(w.cover_url)!} alt={w.title} loading="lazy" decoding="async" /></div> : <div className="card-visual" />}<h2>{w.title}</h2><p>{w.materials.join(" · ")}</p></Link>)}</div></section>}
   </div></section><Footer /></main>;
 }

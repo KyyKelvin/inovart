@@ -7,7 +7,7 @@ export default function Page() {
         <div className="site-shell">
           <div className="section-head">
             <h1>Produtos.</h1>
-            <p>PeÃƒÆ’Ã‚Â§as vinculadas a artesÃƒÆ’Ã‚Â£os, com preÃƒÆ’Ã‚Â§o, envio e ciclo editorial.</p>
+            <p>Peças vinculadas a artesãos, com preço, envio e ciclo editorial.</p>
           </div>
           <AdminCollection table="works" title="produto" />
         </div>

@@ -18,9 +18,9 @@ import { createClient } from "@/lib/supabase";
 
 type NavIcon = ComponentType<{ size?: number; strokeWidth?: number; "aria-hidden"?: boolean }>;
 const nav: readonly [string, string, NavIcon][] = [
-  ["/admin", "VisÃƒÂ£o geral", LayoutDashboard],
-  ["/admin/submissoes", "SolicitaÃƒÂ§ÃƒÂµes", Inbox],
-  ["/admin/artesaos", "ArtesÃƒÂ£os", UserRound],
+  ["/admin", "Visão geral", LayoutDashboard],
+  ["/admin/submissoes", "Solicitações", Inbox],
+  ["/admin/artesaos", "Artesãos", UserRound],
   ["/admin/trabalhos", "Produtos", BriefcaseBusiness],
   ["/admin/categorias", "Categorias", Tags],
   ["/admin/mensagens", "Mensagens", MessageSquareText],
@@ -41,16 +41,16 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <button
         className="admin-scrim"
         type="button"
-        aria-label="Fechar navegaÃƒÂ§ÃƒÂ£o"
+        aria-label="Fechar navegação"
         onClick={() => setOpen(false)}
       />
-      <aside id="admin-sidebar" className="admin-sidebar" aria-label="NavegaÃƒÂ§ÃƒÂ£o editorial">
+      <aside id="admin-sidebar" className="admin-sidebar" aria-label="Navegação editorial">
         <div className="admin-sidebar-head">
           <Link className="admin-brand" href="/admin" onClick={() => setOpen(false)}>
             <b>Inov</b>
             <i>Art</i>
             <span>
-              gestÃƒÂ£o editorial
+              gestão editorial
               <br />
               arquivo vivo
             </span>
@@ -58,13 +58,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <button
             className="admin-close"
             type="button"
-            aria-label="Recolher navegaÃƒÂ§ÃƒÂ£o"
+            aria-label="Recolher navegação"
             onClick={() => setOpen(false)}
           >
             <X size={17} aria-hidden="true" />
           </button>
         </div>
-        <p className="admin-sidebar-label">GestÃƒÂ£o do catÃƒÂ¡logo</p>
+        <p className="admin-sidebar-label">Gestão do catálogo</p>
         <nav className="admin-sidebar-nav">
           {nav.map(([href, label, Icon]) => (
             <Link
@@ -80,7 +80,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </nav>
         <div className="admin-sidebar-foot">
           <span className="admin-session">
-            <i aria-hidden="true" /> sessÃƒÂ£o autenticada
+            <i aria-hidden="true" /> sessão autenticada
           </span>
           <button className="admin-logout" type="button" onClick={signOut}>
             <LogOut size={14} aria-hidden="true" /> Sair
@@ -103,7 +103,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <p className="admin-route">{nav.find(([href]) => active(href))?.[1] || "Editorial"}</p>
           </div>
           <button className="admin-top-logout" type="button" onClick={signOut}>
-            <LogOut size={14} aria-hidden="true" /> Encerrar sessÃƒÂ£o
+            <LogOut size={14} aria-hidden="true" /> Encerrar sessão
           </button>
         </header>
         {children}
