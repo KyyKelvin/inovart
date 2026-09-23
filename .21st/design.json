@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "project": {
+    "name": "inovart",
+    "productType": null,
+    "stack": [
+      "nextjs",
+      "react",
+      "shadcn",
+      "tailwind-v4",
+      "vite"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "app/globals.css"
+    ],
+    "components": [
+      "components/ui"
+    ],
+    "assets": [
+      "assets"
+    ],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "light",
+    "colors": {
+      "--muted": {
+        "value": "#969b96",
+        "source": "app/globals.css"
+      }
+    },
+    "typography": {},
+    "spacing": {},
+    "radius": {
+      "--radius": {
+        "value": "0",
+        "source": "app/globals.css"
+      }
+    },
+    "shadows": {},
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [
+      "accordion",
+      "alert",
+      "alert-dialog",
+      "aspect-ratio",
+      "attachment",
+      "avatar",
+      "badge",
+      "breadcrumb",
+      "bubble",
+      "button",
+      "button-group",
+      "calendar",
+      "card",
+      "carousel",
+      "chart",
+      "checkbox",
+      "collapsible",
+      "combobox",
+      "command",
+      "context-menu",
+      "dialog",
+      "direction",
+      "drawer",
+      "dropdown-menu",
+      "empty",
+      "field",
+      "form",
+      "hover-card",
+      "input",
+      "input-group",
+      "input-otp",
+      "item",
+      "kbd",
+      "label",
+      "marker",
+      "menubar",
+      "message",
+      "message-scroller",
+      "native-select",
+      "navigation-menu",
+      "pagination",
+      "popover",
+      "progress",
+      "radio-group",
+      "resizable",
+      "scroll-area",
+      "select",
+      "separator",
+      "sheet",
+      "sidebar",
+      "skeleton",
+      "slider",
+      "sonner",
+      "spinner",
+      "switch",
+      "table",
+      "tabs",
+      "textarea",
+      "toggle",
+      "toggle-group",
+      "tooltip"
+    ],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [],
+    "avoid": []
+  },
+  "decisions": [
+    {
+      "name": "Work detail layout",
+      "decision": "Use a compact editorial two-column composition with one primary XP-framed image, narrative and object metadata beside it, and deduplicated complementary media below the primary image.",
+      "reason": "Preserves the techno-artisanal visual identity while removing repeated imagery and improving the hierarchy of each work record."
+    },
+    {
+      "name": "Editorial navigation",
+      "decision": "Use a persistent dark editorial sidebar with restrained Lucide line icons and a green icon-only active accent.",
+      "reason": "Matches the techno-artisanal admin reference while keeping navigation states legible and consistent with the public green accent."
+    },
+    {
+      "name": "Artisan profile portrait",
+      "decision": "Keep the authorized portrait inside the existing desktop-window frame, but cap it at a compact portrait width beside the artisan narrative.",
+      "reason": "Keeps the portrait present without overpowering the artisan's story and aligns profile hierarchy with the compact work detail page."
+    }
+  ],
+  "evidence": [
+    {
+      "fact": "components.installed",
+      "source": "components/ui"
+    },
+    {
+      "fact": "design.colorMode:light",
+      "source": "app/globals.css"
+    },
+    {
+      "fact": "design.tokens",
+      "source": "app/globals.css"
+    },
+    {
+      "fact": "project.stack:nextjs",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:shadcn",
+      "source": "components.json"
+    },
+    {
+      "fact": "project.stack:tailwind-v4",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:vite",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-09-23T11:00:04.572Z"
+}

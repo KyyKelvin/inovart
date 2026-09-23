@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { contactSchema, submissionSchema, editorialSchema, slugify, identifyImage, readImageDimensions, assertImageDimensions } from "../supabase/functions/_shared/validation.ts";
 import { createLimitedBodyStream } from "../lib/request-stream.ts";
 import { createStreamingRequest } from "../lib/streaming-request.ts";
+import { formatBrlFromCents, formatCentsForInput, parseBrlToCents } from "../lib/currency.ts";
 
 const png=(width,height,ihdrLength=13)=>{
   const bytes=new Uint8Array(33);
@@ -40,10 +41,14 @@ const vp8l=(width,height)=>{
 };
 
 const proposal = {
-  name: "Pessoa de teste", craft: "Cerâmica", bio: "Uma trajetória de teste com mais de quarenta caracteres para validação.",
-  email: "test@example.com", consent: true,
-  works: [{ title: "Peça de teste", description: "Uma descrição de teste.", materials: ["Barro"] }],
+  name: "Pessoa de teste",
+  craft_category_id: "11111111-1111-4111-8111-111111111111",
+  bio: "Uma trajetÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ria de teste com mais de quarenta caracteres para validaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o.",
+  email: "test@example.com",
+  consent: true,
+  works: [{ title: "PeÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§a de teste", description: "Uma descriÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o de teste.", materials: ["Barro"], price_cents: 12550, shipping_details: "Retirada no ateliÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âª" }],
 };
+
 test("accepts a complete proposal and keeps public contacts private by default", () => {
   const data = submissionSchema.parse(proposal);
   assert.equal(data.public_email, false); assert.equal(data.public_phone, false); assert.equal(data.public_instagram, false);
@@ -60,6 +65,21 @@ test("rejects incomplete biographies and malformed contact details", () => {
 test("strips attempts to set editorial status or administrative metadata", () => {
   const parsed = submissionSchema.parse({ ...proposal, status: "published", reviewed_by: "attacker", app_metadata: { role: "admin" } });
   assert.equal("status" in parsed, false); assert.equal("reviewed_by" in parsed, false); assert.equal("app_metadata" in parsed, false);
+});
+test("accepts explicit region privacy and commerce fields", () => {
+  const data = submissionSchema.parse({ ...proposal, neighborhood: "Centro", region_withheld: true });
+  assert.equal(data.region_withheld, true);
+  assert.equal(data.works[0].price_cents, 12550);
+  assert.equal(data.works[0].shipping_details, "Retirada no ateliÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âª");
+});
+test("normalizes Brazilian prices without floating point storage", () => {
+  assert.equal(parseBrlToCents("R$ 1.234,56"), 123456);
+  assert.equal(parseBrlToCents("1.234"), 123400);
+  assert.equal(parseBrlToCents("120.50"), 12050);
+  assert.equal(parseBrlToCents(""), null);
+  assert.equal(parseBrlToCents("12,345"), -1);
+  assert.equal(formatCentsForInput(123456), "1234,56");
+  assert.match(formatBrlFromCents(123456), /1\.234,56/);
 });
 test("only accepts real image signatures, independently of filename", () => {
   const png = Uint8Array.from([137,80,78,71,13,10,26,10,0,0,0,0]);
@@ -79,7 +99,7 @@ test("reads image dimensions before decoding and rejects oversized pixels", () =
 });
 test("rejects malformed image dimension structures", () => {
   assert.throws(()=>readImageDimensions(png(4000,3000,12)),/PNG/);
-  assert.throws(()=>readImageDimensions(png(0,3000)),/dimensões/);
+  assert.throws(()=>readImageDimensions(png(0,3000)),/dimens/);
   assert.throws(()=>readImageDimensions(png(4000,3000).slice(0,24)),/PNG/);
   assert.throws(()=>readImageDimensions(jpeg(4000,3000,0xc0,7)),/JPEG/);
   const brokenJpeg=jpeg(4000,3000);brokenJpeg[4]=0xff;
@@ -87,7 +107,7 @@ test("rejects malformed image dimension structures", () => {
   const brokenRiff=vp8x(4000,3000);brokenRiff[4]--;
   assert.throws(()=>readImageDimensions(brokenRiff),/RIFF/);
   assert.throws(()=>readImageDimensions(vp8x(4000,3000,0x02)),/animado/);
-  assert.throws(()=>assertImageDimensions(png(16385,1)),/dimensões/);
+  assert.throws(()=>assertImageDimensions(png(16385,1)),/dimens/);
 });
 test("streams request bodies up to the exact limit and stops oversized chunks", async () => {
   const stream=chunks=>new ReadableStream({start(controller){for(const chunk of chunks)controller.enqueue(Uint8Array.from(chunk));controller.close();}});
@@ -105,10 +125,10 @@ test("constructs a Node-compatible request from a streamed body", async () => {
   assert.equal(await request.text(),"{}");
 });
 test("editorial saves cannot directly change publication status", () => {
-  const parsed = editorialSchema.parse({table:"categories",values:{name:"Cerâmica",slug:"ceramica",description:"Peças artesanais em cerâmica.",status:"published"}});
+  const parsed = editorialSchema.parse({table:"categories",values:{name:"CerÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢mica",slug:"ceramica",description:"PeÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§as artesanais em cerÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢mica.",status:"published"}});
   assert.equal("status" in parsed.values, false);
   assert.equal(editorialSchema.safeParse({ table: "auth.users", values: {} }).success, false);
 });
 test("generates safe slugs from Portuguese titles", () => {
-  assert.equal(slugify("  Cerâmica & memória  "), "ceramica-memoria");
+  assert.equal(slugify("  Ceramica & memoria  "), "ceramica-memoria");
 });

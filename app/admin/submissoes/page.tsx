@@ -1,3 +1,24 @@
 import { AdminDashboard } from "@/components/admin-dashboard";
-export const metadata = { title: "Solicitações editoriais" };
-export default function Page() { return <main id="conteudo"><section className="section"><div className="site-shell"><div className="section-head"><div><p className="eyebrow">Backoffice 02 / curadoria</p><h1>Solicitações.</h1></div><p>Submissões nunca entram no arquivo público sem revisão. Abra uma proposta para conferir os dados e as imagens recebidas.</p></div><AdminDashboard /></div></section></main>; }
+
+export const metadata = { title: "SolicitaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes" };
+
+export default function Page() {
+  return (
+    <main id="conteudo">
+      <section className="section admin-section">
+        <div className="site-shell">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Backoffice 01 / triagem</p>
+              <h1>SolicitaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes.</h1>
+            </div>
+            <p>
+              Cada proposta passa por revisÃƒÆ’Ã‚Â£o antes de criar rascunhos de perfil e produtos no arquivo.
+            </p>
+          </div>
+          <AdminDashboard />
+        </div>
+      </section>
+    </main>
+  );
+}

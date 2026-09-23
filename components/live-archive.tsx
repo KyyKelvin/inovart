@@ -56,7 +56,7 @@ function ArchiveCard({ item, index, kind, headingLevel }: { item: Card; index: n
         <XpImageFrame
           className="xp-image-frame--card"
           label={`objeto_${String(index + 1).padStart(2, "0")}.webp`}
-          status={`${item.title} • arquivo local`}
+          status={`${item.title} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ arquivo local`}
         >
           {item.image ? (
             <div className="media-frame"><img src={item.image} alt={item.title} loading="lazy" decoding="async" /></div>
@@ -77,7 +77,7 @@ function ArchiveCard({ item, index, kind, headingLevel }: { item: Card; index: n
           style={{ background: index % 3 === 1 ? "#2347ff" : index % 3 === 2 ? "#55f58a" : "#eae6da", "--tilt": `${index % 2 ? 7 : -7}deg` } as CSSProperties}
         />
       )}
-      <div className="card-copy"><span className="chip">{item.place}</span><CardHeading>{item.title}</CardHeading><p>{item.subtitle}</p><span className="card-arrow" aria-hidden="true">↗</span></div>
+      <div className="card-copy"><span className="chip">{item.place}</span><CardHeading>{item.title}</CardHeading><p>{item.subtitle}</p><span className="card-arrow" aria-hidden="true">ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â€</span></div>
     </Link>
   );
 }
@@ -95,18 +95,18 @@ export function LiveArchive({ kind, featured = false }: { kind: "artisans" | "wo
     const selection = kind === "artisans" ? "*,artisan_categories(categories(id,name,slug))" : "*,artisans(name,slug),work_categories(categories(id,name,slug))";
     client.from(kind).select(selection).eq("status", "published").order("featured", { ascending: false }).order("published_at", { ascending: false }).limit(featured ? 3 : 100).then(({ data, error }) => {
       if (!active) return;
-      if (error) { setError("Não foi possível consultar o arquivo. Tente novamente."); setLoading(false); return; }
+      if (error) { setError("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel consultar o arquivo. Tente novamente."); setLoading(false); return; }
       setError("");
       const mapped = kind === "artisans"
-        ? (data as unknown as Artisan[]).map(x => ({ slug: x.slug, title: x.name, subtitle: x.craft, place: x.neighborhood || "Varginha · MG", image: safeMediaUrl(x.portrait_url), categories: x.artisan_categories?.flatMap(c => c.categories ? [{ slug: c.categories.slug, name: c.categories.name }] : []) || [] }))
-        : (data as unknown as Work[]).map(x => ({ slug: x.slug, title: x.title, subtitle: x.materials.join(" · "), place: x.artisans?.name || "Varginha · MG", image: safeMediaUrl(x.cover_url), categories: x.work_categories?.flatMap(c => c.categories ? [{ slug: c.categories.slug, name: c.categories.name }] : []) || [] }));
+        ? (data as unknown as Artisan[]).map(x => ({ slug: x.slug, title: x.name, subtitle: x.craft, place: x.region_withheld ? "RegiÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o informada" : x.neighborhood || "Varginha Ãƒâ€šÃ‚Â· MG", image: safeMediaUrl(x.portrait_url), categories: x.artisan_categories?.flatMap(c => c.categories ? [{ slug: c.categories.slug, name: c.categories.name }] : []) || [] }))
+        : (data as unknown as Work[]).map(x => ({ slug: x.slug, title: x.title, subtitle: x.materials.join(" Ãƒâ€šÃ‚Â· "), place: x.artisans?.name || "Varginha Ãƒâ€šÃ‚Â· MG", image: safeMediaUrl(x.cover_url), categories: x.work_categories?.flatMap(c => c.categories ? [{ slug: c.categories.slug, name: c.categories.name }] : []) || [] }));
       setItems(mapped); setLoading(false);
     });
     return () => { active = false; };
   }, [kind, attempt, featured]);
   const fallback = useMemo<Card[]>(() => kind === "artisans"
     ? demoArtisans.map(x => ({ slug: x.slug, title: x.name, subtitle: x.craft, place: x.place, image: null, categories: [{ slug: x.category, name: categoryNames[x.category] || x.category }] }))
-    : demoWorks.map(x => ({ slug: x.slug, title: x.title, subtitle: x.material, place: "Estudo de composição", image: null, categories: [{ slug: x.category, name: categoryNames[x.category] || x.category }] })), [kind]);
+    : demoWorks.map(x => ({ slug: x.slug, title: x.title, subtitle: x.material, place: "Estudo de composiÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o", image: null, categories: [{ slug: x.category, name: categoryNames[x.category] || x.category }] })), [kind]);
   const shown = useMemo(() => items.length ? items : fallback, [items, fallback]);
   const availableCategories = useMemo(() => Array.from(new Map(shown.flatMap(item => item.categories).map(item => [item.slug, item.name])).entries()), [shown]);
   const normalized = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -115,13 +115,13 @@ export function LiveArchive({ kind, featured = false }: { kind: "artisans" | "wo
     `${x.title} ${x.subtitle} ${x.place}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(normalized)
   ), [shown, category, normalized]);
   if (error) return <div className="window form-padding"><p role="alert">{error}</p><button className="button" onClick={() => { setError(""); setLoading(true); setAttempt(attempt + 1); }}>Tentar novamente</button></div>;
-  if (loading) return <div className="archive-loading" role="status">Consultando o arquivo…</div>;
+  if (loading) return <div className="archive-loading" role="status">Consultando o arquivoÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</div>;
   const cards = featured ? filtered.slice(0, 3) : filtered;
   return <>
-    {!items.length && <p className="demo-note">Acervo em formação · exemplos de layout, sem pessoas reais cadastradas</p>}
+    {!items.length && <p className="demo-note">Acervo em formaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o Ãƒâ€šÃ‚Â· exemplos de layout, sem pessoas reais cadastradas</p>}
     {!featured && <div className="archive-controls">
-      <div className="field"><label htmlFor="archive-search">Buscar no arquivo</label><input id="archive-search" type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Nome, técnica ou material" /></div>
-      <div className="field"><label htmlFor="archive-category">Técnica</label><select id="archive-category" value={category} onChange={e => setCategory(e.target.value)}><option value="">Todas as técnicas</option>{availableCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+      <div className="field"><label htmlFor="archive-search">Buscar no arquivo</label><input id="archive-search" type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Nome, tÃƒÆ’Ã‚Â©cnica ou material" /></div>
+      <div className="field"><label htmlFor="archive-category">TÃƒÆ’Ã‚Â©cnica</label><select id="archive-category" value={category} onChange={e => setCategory(e.target.value)}><option value="">Todas as tÃƒÆ’Ã‚Â©cnicas</option>{availableCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
       <p className="mono result-count" role="status">{filtered.length} {items.length ? "registros" : "exemplos"}</p>
     </div>}
     <div className="cards archive-cards">{cards.map((item, index) => <ArchiveCard item={item} index={index} kind={kind} headingLevel={featured ? 3 : 2} key={item.slug} />)}</div>

@@ -32,7 +32,7 @@ async function checkProxy(request:Request) {
 }
 async function rateLimit(request:Request,email:string,action:"submission"|"contact") {
   const fingerprint=request.headers.get("x-inovart-client-hash")||"";
-  if(!/^[a-f0-9]{64}$/.test(fingerprint))throw new ApiError("Acesso não autorizado.",401);
+  if(!/^[a-f0-9]{64}$/.test(fingerprint))throw new ApiError("Acesso nÃƒÆ’Ã‚Â£o autorizado.",401);
   const emailKey=await digest(`${serviceKey}:${action}:email:${email.trim().toLowerCase()}`);
   const checks:[[string,number],[string,number]]=[
     [`${action}:client:${fingerprint}`,action==="submission"?4:12],
@@ -40,17 +40,17 @@ async function rateLimit(request:Request,email:string,action:"submission"|"conta
   ];
   for(const[p_key,p_limit]of checks){
     const {data,error}=await db.rpc("consume_request_limit",{p_key,p_limit});
-    if(error)throw new ApiError("O recebimento está temporariamente indisponível.",503);
+    if(error)throw new ApiError("O recebimento estÃƒÆ’Ã‚Â¡ temporariamente indisponÃƒÆ’Ã‚Â­vel.",503);
     if(!data)throw new ApiError("Limite de envios atingido. Tente novamente em uma hora.",429,3600);
   }
 }
 async function imageBytes(file:File) {
   const bytes=new Uint8Array(await file.arrayBuffer());
   let detected:string;
-  try{detected=identifyImage(bytes);}catch(error){throw new ApiError(error instanceof Error?error.message:"Imagem inválida.",413);}
-  if(file.type && detected!==file.type)throw new ApiError("O conteúdo da imagem não corresponde ao formato informado.",400);
+  try{detected=identifyImage(bytes);}catch(error){throw new ApiError(error instanceof Error?error.message:"Imagem invÃƒÆ’Ã‚Â¡lida.",413);}
+  if(file.type && detected!==file.type)throw new ApiError("O conteÃƒÆ’Ã‚Âºdo da imagem nÃƒÆ’Ã‚Â£o corresponde ao formato informado.",400);
   try{assertImageDimensions(bytes);}catch(error){
-    const message=error instanceof Error?error.message:"Imagem inválida.";
+    const message=error instanceof Error?error.message:"Imagem invÃƒÆ’Ã‚Â¡lida.";
     throw new ApiError(message,message.includes("excede")?413:400);
   }
   await ensureMagick();
@@ -65,7 +65,7 @@ async function imageBytes(file:File) {
     });
   }catch(error){
     if(error instanceof ApiError)throw error;
-    throw new ApiError("Não foi possível decodificar a imagem.",400);
+    throw new ApiError("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel decodificar a imagem.",400);
   }
 }
 async function submit(request:Request) {
@@ -78,7 +78,9 @@ async function submit(request:Request) {
   for(const key of form.keys())if(!known.has(key))throw new ApiError("Campo de arquivo inesperado.",400);
   const existing=await db.from("artisan_submissions").select("id").eq("id",id).maybeSingle();
   if(existing.data)return reply({received:true,id});
-  if(existing.error)throw new ApiError("O recebimento está temporariamente indisponível.",503);
+  if(existing.error)throw new ApiError("O recebimento estÃƒÆ’Ã‚Â¡ temporariamente indisponÃƒÆ’Ã‚Â­vel.",503);
+  const craft=await db.from("categories").select("id,name").eq("id",parsed.craft_category_id).maybeSingle();
+  if(craft.error||!craft.data)throw new ApiError("Selecione um ofÃƒÆ’Ã‚Â­cio disponÃƒÆ’Ã‚Â­vel.",400);
   await rateLimit(request,parsed.email,"submission");
   const fieldPaths:Record<string,string>={};
   const uploaded:string[]=[];
@@ -88,12 +90,12 @@ async function submit(request:Request) {
       const path=`${id}/${field}.webp`;
       const bytes=await imageBytes(value);
       const{error}=await db.storage.from("submission-media").upload(path,bytes,{contentType:"image/webp",upsert:false});
-      if(error)throw new ApiError("Não foi possível armazenar as imagens.",503);
+      if(error)throw new ApiError("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel armazenar as imagens.",503);
       uploaded.push(path);fieldPaths[field]=path;
     }
     const works=parsed.works.map((w,i)=>({...w,position:i,image_paths:[fieldPaths[`work_${i}_0`],fieldPaths[`work_${i}_1`]].filter(Boolean)}));
-    const{error}=await db.rpc("save_submission",{p_id:id,p_data:parsed,p_portrait:fieldPaths.portrait||null,p_works:works});
-    if(error)throw new ApiError("Não foi possível salvar a proposta. Tente novamente.",503);
+    const{error}=await db.rpc("save_submission",{p_id:id,p_data:{...parsed,craft:craft.data.name},p_portrait:fieldPaths.portrait||null,p_works:works});
+    if(error)throw new ApiError("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel salvar a proposta. Tente novamente.",503);
     return reply({received:true,id},201);
   }catch(error){
     if(uploaded.length)await db.storage.from("submission-media").remove(uploaded);
@@ -102,9 +104,9 @@ async function submit(request:Request) {
 }
 async function promote(path:string,target:string) {
   const{data,error}=await db.storage.from("submission-media").download(path);
-  if(error||!data)throw new ApiError("Uma imagem aprovada não está disponível.",503);
+  if(error||!data)throw new ApiError("Uma imagem aprovada nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ disponÃƒÆ’Ã‚Â­vel.",503);
   const up=await db.storage.from("public-media").upload(target,data,{contentType:"image/webp",upsert:false});
-  if(up.error)throw new ApiError("Não foi possível preparar a imagem para publicação.",503);
+  if(up.error)throw new ApiError("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel preparar a imagem para publicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.",503);
   return {path:target,url:db.storage.from("public-media").getPublicUrl(target).data.publicUrl};
 }
 type CleanupRow={id:number;object_path:string;lease_token:string;attempts:number};
@@ -130,7 +132,7 @@ async function retryPendingMediaCleanup(){
 async function editorial(request:Request) {
   const token=(request.headers.get("authorization")||"").replace(/^Bearer /,"");
   const{data:{user},error:authError}=await db.auth.getUser(token);
-  if(authError||!user||user.app_metadata?.role!=="admin")return reply({error:"Acesso editorial necessário."},403);
+  if(authError||!user||user.app_metadata?.role!=="admin")return reply({error:"Acesso editorial necessÃƒÆ’Ã‚Â¡rio."},403);
   const caller=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:`Bearer ${token}`}}});
   const body=await request.json();
   const id=body.id?z.string().uuid().parse(body.id):undefined;
@@ -138,27 +140,32 @@ async function editorial(request:Request) {
     const status=z.enum(["under_review","approved","rejected"]).parse(body.status);
     const notes=z.string().max(3000).parse(body.notes||"");
     const{data,error}=await caller.rpc("review_submission",{p_id:id,p_status:status,p_notes:notes});
-    if(error)throw new Error("Não foi possível salvar a decisão editorial.");
+    if(error)throw new Error("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel salvar a decisÃƒÆ’Ã‚Â£o editorial.");
     return reply({artisan_id:data,status});
   }
   if(body.action==="save"){
     const parsed=editorialSchema.parse(body);
     const{data,error}=await caller.rpc("save_editorial_record",{p_table:parsed.table,p_id:id||null,p_values:parsed.values});
-    if(error)throw new Error("Não foi possível salvar. Confira o endereço curto e os campos obrigatórios.");
+    if(error)throw new Error("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel salvar. Confira o endereÃƒÆ’Ã‚Â§o curto e os campos obrigatÃƒÆ’Ã‚Â³rios.");
+    return reply({id:data});
+  }
+  if(body.action==="delete_category"){
+    const{data,error}=await caller.rpc("delete_editorial_category",{p_id:id});
+    if(error)throw new Error("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel excluir a categoria.");
     return reply({id:data});
   }
   if(body.action==="message_status"){
     const status=z.enum(["new","read","resolved"]).parse(body.status);
     const{data,error}=await caller.from("contact_messages").update({status}).eq("id",id).select("id").single();
-    if(error)throw new Error("Mensagem não encontrada.");return reply({id:data.id,status});
+    if(error)throw new Error("Mensagem nÃƒÆ’Ã‚Â£o encontrada.");return reply({id:data.id,status});
   }
   if(body.action==="publish"||body.action==="archive"){
     const table=z.enum(["artisans","works"]).parse(body.table);
     const{data:record,error}=await caller.from(table).select("*").eq("id",id).single();
-    if(error||!record)throw new Error("Registro não encontrado.");
+    if(error||!record)throw new Error("Registro nÃƒÆ’Ã‚Â£o encontrado.");
     if(body.action==="archive"){
       const result=await caller.rpc("archive_editorial_record",{p_table:table,p_id:id});
-      if(result.error)throw new ApiError("Não foi possível arquivar.",503);
+      if(result.error)throw new ApiError("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel arquivar.",503);
       const cleanupPending=!(await retryPendingMediaCleanup());
       return reply({id,status:"archived",cleanup_pending:cleanupPending});
     }
@@ -176,10 +183,10 @@ async function editorial(request:Request) {
       }
       if(table==="works"){
         const parent=await caller.from("artisans").select("status").eq("id",record.artisan_id).single();
-        if(parent.data?.status!=="published")throw new ApiError("Publique primeiro o perfil do artesão.",400);
+        if(parent.data?.status!=="published")throw new ApiError("Publique primeiro o perfil do artesÃƒÆ’Ã‚Â£o.",400);
         if(record.source_work_id){
           const source=await db.from("submission_works").select("image_paths").eq("id",record.source_work_id).single();
-          if(source.error)throw new ApiError("Material de origem não encontrado.",400);
+          if(source.error)throw new ApiError("Material de origem nÃƒÆ’Ã‚Â£o encontrado.",400);
           const items=[];
           for(let index=0;index<source.data.image_paths.length;index++){
             const uploaded=await promote(source.data.image_paths[index],`works/${id}/${version}/image-${index}.webp`);
@@ -190,7 +197,7 @@ async function editorial(request:Request) {
         }
       }
       const result=await caller.rpc("publish_editorial_record",{p_table:table,p_id:id,p_media:media});
-      if(result.error)throw new ApiError("Não foi possível publicar.",503);
+      if(result.error)throw new ApiError("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel publicar.",503);
       const cleanupPending=!(await retryPendingMediaCleanup());
       return reply({id,status:"published",cleanup_pending:cleanupPending});
     }catch(error){
@@ -206,12 +213,12 @@ async function editorial(request:Request) {
       throw error;
     }
   }
-  return reply({error:"Ação não reconhecida."},400);
+  return reply({error:"AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o reconhecida."},400);
 }
 Deno.serve(async(request:Request)=>{
-  if(request.method!=="POST")return reply({error:"Método não permitido."},405);
+  if(request.method!=="POST")return reply({error:"MÃƒÆ’Ã‚Â©todo nÃƒÆ’Ã‚Â£o permitido."},405);
   try{
-    if(!await checkProxy(request))return reply({error:"Acesso não autorizado."},401);
+    if(!await checkProxy(request))return reply({error:"Acesso nÃƒÆ’Ã‚Â£o autorizado."},401);
     const action=request.headers.get("x-inovart-action");
     if(action==="health"){
       await ensureMagick();
@@ -224,16 +231,16 @@ Deno.serve(async(request:Request)=>{
       if(data.website)return reply({error:"Envio recusado."},400);
       const parsed=contactSchema.parse(data);await rateLimit(request,parsed.email,"contact");
       const{error}=await db.from("contact_messages").insert(parsed);
-      if(error)throw new ApiError("Não foi possível salvar sua mensagem.",503);
+      if(error)throw new ApiError("NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel salvar sua mensagem.",503);
       return reply({received:true},201);
     }
     if(action==="editorial")return await editorial(request);
-    return reply({error:"Ação não reconhecida."},400);
+    return reply({error:"AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o reconhecida."},400);
   }catch(error){
-    if(error instanceof z.ZodError)return reply({error:"Confira os campos obrigatórios e os limites do formulário."},400);
+    if(error instanceof z.ZodError)return reply({error:"Confira os campos obrigatÃƒÆ’Ã‚Â³rios e os limites do formulÃƒÆ’Ã‚Â¡rio."},400);
     if(error instanceof ApiError)return reply({error:error.message},error.status,error.retryAfter?{"Retry-After":String(error.retryAfter)}:{});
     const incident=crypto.randomUUID();
     console.error("inovart-api",incident,error instanceof Error?error.name:"unknown");
-    return reply({error:`Não foi possível concluir a operação. Referência: ${incident}`},500);
+    return reply({error:`NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel concluir a operaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o. ReferÃƒÆ’Ã‚Âªncia: ${incident}`},500);
   }
 });
