@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { contactSchema, submissionSchema, editorialSchema, slugify, identifyImage, readImageDimensions, assertImageDimensions } from "../supabase/functions/_shared/validation.ts";
+import { contactSchema, submissionSchema, submissionFilesSchema, editorialSchema, slugify, identifyImage, readImageDimensions, assertImageDimensions } from "../supabase/functions/_shared/validation.ts";
 import { createLimitedBodyStream } from "../lib/request-stream.ts";
 import { createStreamingRequest } from "../lib/streaming-request.ts";
 import { formatBrlFromCents, formatCentsForInput, parseBrlToCents } from "../lib/currency.ts";
@@ -71,6 +71,17 @@ test("accepts explicit region privacy and commerce fields", () => {
   assert.equal(data.region_withheld, true);
   assert.equal(data.works[0].price_cents, 12550);
   assert.equal(data.works[0].shipping_details, "Retirada no ateliê");
+});
+test("accepts only unique submission image slots within the upload limits", () => {
+  const files = [
+    { field: "portrait", type: "image/jpeg", size: 1024 },
+    { field: "work_0_0", type: "image/webp", size: 5 * 1024 * 1024 },
+  ];
+  assert.equal(submissionFilesSchema.safeParse(files).success, true);
+  assert.equal(submissionFilesSchema.safeParse([...files, files[0]]).success, false);
+  assert.equal(submissionFilesSchema.safeParse([{ field: "work_3_0", type: "image/png", size: 1024 }]).success, false);
+  assert.equal(submissionFilesSchema.safeParse([{ field: "portrait", type: "image/gif", size: 1024 }]).success, false);
+  assert.equal(submissionFilesSchema.safeParse([{ field: "portrait", type: "image/png", size: 5 * 1024 * 1024 + 1 }]).success, false);
 });
 test("normalizes Brazilian prices without floating point storage", () => {
   assert.equal(parseBrlToCents("R$ 1.234,56"), 123456);

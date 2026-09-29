@@ -13,6 +13,19 @@ export const submissionSchema = z.object({
     materials:z.array(z.string().trim().min(1).max(80)).max(15), price_cents:z.number().int().min(0).max(999999999).nullable().default(null),
     shipping_details:z.string().trim().max(500).default("") })).min(1).max(3),
 });
+export const submissionFilesSchema = z.array(z.object({
+  field:z.string().regex(/^(portrait|work_[0-2]_[01])$/),
+  type:z.enum(["image/jpeg","image/png","image/webp"]),
+  size:z.number().int().min(1).max(5*1024*1024),
+})).max(7).superRefine((files,context)=>{
+  const fields=new Set<string>();
+  let total=0;
+  for(const file of files){
+    if(fields.has(file.field))context.addIssue({code:"custom",message:"Arquivo duplicado.",path:[files.indexOf(file),"field"]});
+    fields.add(file.field);total+=file.size;
+  }
+  if(total>35*1024*1024)context.addIssue({code:"custom",message:"O envio ultrapassa o limite total de 35 MB."});
+});
 export const editorialSchema = z.discriminatedUnion("table", [
   z.object({ table:z.literal("categories"), values:z.object({name:z.string().trim().min(2).max(120),slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180),description:z.string().trim().min(10).max(2000)}) }),
   z.object({ table:z.literal("artisans"), values:z.object({name:z.string().trim().min(2).max(120),slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180),craft_category_id:z.string().uuid(),bio:z.string().trim().min(40).max(3000),neighborhood:z.string().trim().max(120).default(""),region_withheld:z.boolean().default(false),quote:z.string().max(500).default(""),featured:z.boolean().default(false),category_ids:z.array(z.string().uuid()).max(20)}) }),

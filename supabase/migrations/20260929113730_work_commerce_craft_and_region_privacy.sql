@@ -1,3 +1,4 @@
+-- Applied through the Supabase connector as migration version 20260929113730.
 alter table public.artisans
   add column if not exists craft_category_id uuid references public.categories(id) on delete set null,
   add column if not exists region_withheld boolean not null default false;

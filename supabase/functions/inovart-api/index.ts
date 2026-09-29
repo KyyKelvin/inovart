@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { ImageMagick, initializeImageMagick, MagickFormat } from "@imagemagick/magick-wasm";
-import { contactSchema, submissionSchema, editorialSchema, identifyImage, assertImageDimensions } from "../_shared/validation.ts";
+import { contactSchema, submissionSchema, submissionFilesSchema, editorialSchema, identifyImage, assertImageDimensions } from "../_shared/validation.ts";
 import { z } from "zod";
 
 const url = Deno.env.get("SUPABASE_URL")!;
@@ -44,11 +44,11 @@ async function rateLimit(request:Request,email:string,action:"submission"|"conta
     if(!data)throw new ApiError("Limite de envios atingido. Tente novamente em uma hora.",429,3600);
   }
 }
-async function imageBytes(file:File) {
+async function imageBytes(file:Blob,declaredType=file.type) {
   const bytes=new Uint8Array(await file.arrayBuffer());
   let detected:string;
   try{detected=identifyImage(bytes);}catch(error){throw new ApiError(error instanceof Error?error.message:"Imagem inválida.",413);}
-  if(file.type && detected!==file.type)throw new ApiError("O conteúdo da imagem não corresponde ao formato informado.",400);
+  if(declaredType && detected!==declaredType)throw new ApiError("O conteúdo da imagem não corresponde ao formato informado.",400);
   try{assertImageDimensions(bytes);}catch(error){
     const message=error instanceof Error?error.message:"Imagem inválida.";
     throw new ApiError(message,message.includes("excede")?413:400);
@@ -68,7 +68,7 @@ async function imageBytes(file:File) {
     throw new ApiError("Não foi possível decodificar a imagem.",400);
   }
 }
-async function submit(request:Request) {
+async function submitLegacy(request:Request) {
   if(Number(request.headers.get("content-length")||0)>36*1024*1024)return reply({error:"Envio muito grande."},413);
   const form=await request.formData();
   if(form.get("website"))return reply({error:"Envio recusado."},400);
@@ -102,6 +102,231 @@ async function submit(request:Request) {
     throw error;
   }
 }
+const storedSubmissionFilesSchema=z.array(z.object({
+  field:z.string().regex(/^(portrait|work_[0-2]_[01])$/),
+  type:z.enum(["image/jpeg","image/png","image/webp"]),
+  size:z.number().int().min(1).max(5*1024*1024),
+  path:z.string().regex(/^_incoming\/[0-9a-f-]{36}\/(portrait|work_[0-2]_[01])\.(jpg|png|webp)$/),
+})).max(7);
+type StoredSubmissionFile=z.infer<typeof storedSubmissionFilesSchema>[number];
+type UploadSession={
+  id:string;data:unknown;files:unknown;session_token_hash:string;state:"prepared"|"processing";
+  expires_at:string;updated_at:string;
+};
+const mimeExtension:Record<StoredSubmissionFile["type"],string>={
+  "image/jpeg":"jpg","image/png":"png","image/webp":"webp",
+};
+const sessionExpiry=()=>new Date(Date.now()+2*60*60*1000).toISOString();
+const finalPath=(id:string,field:string)=>`${id}/${field}.webp`;
+function newSessionToken(){
+  const bytes=crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
+}
+function constantTimeEqual(left:string,right:string){
+  if(left.length!==right.length)return false;
+  let diff=0;
+  for(let index=0;index<left.length;index++)diff|=left.charCodeAt(index)^right.charCodeAt(index);
+  return diff===0;
+}
+async function validSessionToken(token:string|undefined,expectedHash:string){
+  if(!token||token.length<32||token.length>256)return false;
+  return constantTimeEqual(await digest(token),expectedHash);
+}
+const parseStoredFiles=(value:unknown)=>storedSubmissionFilesSchema.parse(value);
+async function removeUploadSession(session:UploadSession){
+  let files:StoredSubmissionFile[];
+  try{files=parseStoredFiles(session.files);}catch{return false;}
+  const existing=await db.from("artisan_submissions").select("id").eq("id",session.id).maybeSingle();
+  if(existing.error)return false;
+  const paths=files.map(file=>file.path);
+  if(!existing.data)paths.push(...files.map(file=>finalPath(session.id,file.field)));
+  if(paths.length){
+    const removal=await db.storage.from("submission-media").remove([...new Set(paths)]);
+    if(removal.error)return false;
+  }
+  const deleted=await db.from("submission_upload_sessions").delete().eq("id",session.id);
+  return !deleted.error;
+}
+async function cleanupExpiredUploadSessions(){
+  const expired=await db.from("submission_upload_sessions")
+    .select("id,data,files,session_token_hash,state,expires_at,updated_at")
+    .lt("expires_at",new Date().toISOString()).limit(20);
+  if(expired.error){
+    console.error("inovart-api",crypto.randomUUID(),"upload_session_cleanup_query_failed");
+    return;
+  }
+  for(const session of (expired.data||[]) as UploadSession[]){
+    if(!await removeUploadSession(session))
+      console.error("inovart-api",crypto.randomUUID(),"upload_session_cleanup_failed");
+  }
+}
+async function prepareSubmission(request:Request,body:unknown){
+  const payload=z.object({
+    phase:z.literal("prepare"),request_id:z.string().uuid(),data:submissionSchema,
+    files:submissionFilesSchema,website:z.string().max(200).default(""),
+    session_token:z.string().max(256).optional(),
+  }).parse(body);
+  if(payload.website)throw new ApiError("Envio recusado.",400);
+  const id=payload.request_id;
+  const allowed=new Set(["portrait",...payload.data.works.flatMap((_,index)=>[
+    `work_${index}_0`,`work_${index}_1`,
+  ])]);
+  if(payload.files.some(file=>!allowed.has(file.field)))
+    throw new ApiError("Campo de arquivo inesperado.",400);
+  const files:StoredSubmissionFile[]=payload.files.map(file=>({
+    ...file,path:`_incoming/${id}/${file.field}.${mimeExtension[file.type]}`,
+  }));
+  const existing=await db.from("artisan_submissions").select("id").eq("id",id).maybeSingle();
+  if(existing.data)return reply({received:true,id});
+  if(existing.error)throw new ApiError("O recebimento está temporariamente indisponível.",503);
+  const craft=await db.from("categories").select("id").eq("id",payload.data.craft_category_id).maybeSingle();
+  if(craft.error||!craft.data)throw new ApiError("Selecione um ofício disponível.",400);
+
+  const found=await db.from("submission_upload_sessions")
+    .select("id,data,files,session_token_hash,state,expires_at,updated_at")
+    .eq("id",id).maybeSingle();
+  if(found.error)throw new ApiError("O recebimento está temporariamente indisponível.",503);
+  let sessionToken=payload.session_token;
+  if(found.data){
+    const session=found.data as UploadSession;
+    if(!await validSessionToken(sessionToken,session.session_token_hash))
+      throw new ApiError("Esta tentativa de envio expirou. Recarregue a página e tente novamente.",409);
+    const processingFor=Date.now()-new Date(session.updated_at).getTime();
+    if(session.state==="processing"&&processingFor<2*60*1000)
+      throw new ApiError("O envio ainda está sendo finalizado.",409);
+    const oldFiles=parseStoredFiles(session.files);
+    const currentPaths=new Set(files.map(file=>file.path));
+    const currentFields=new Set(files.map(file=>file.field));
+    const stale=[
+      ...oldFiles.filter(file=>!currentPaths.has(file.path)).map(file=>file.path),
+      ...oldFiles.filter(file=>!currentFields.has(file.field)).map(file=>finalPath(id,file.field)),
+    ];
+    if(stale.length){
+      const removal=await db.storage.from("submission-media").remove([...new Set(stale)]);
+      if(removal.error)throw new ApiError("Não foi possível atualizar as imagens desta tentativa.",503);
+    }
+    const updated=await db.from("submission_upload_sessions").update({
+      data:payload.data,files,state:"prepared",expires_at:sessionExpiry(),updated_at:new Date().toISOString(),
+    }).eq("id",id);
+    if(updated.error)throw new ApiError("O recebimento está temporariamente indisponível.",503);
+  }else{
+    await rateLimit(request,payload.data.email,"submission");
+    sessionToken=newSessionToken();
+    const inserted=await db.from("submission_upload_sessions").insert({
+      id,data:payload.data,files,client_hash:request.headers.get("x-inovart-client-hash"),
+      session_token_hash:await digest(sessionToken),expires_at:sessionExpiry(),
+    });
+    if(inserted.error)throw new ApiError("Não foi possível preparar o envio. Tente novamente.",503);
+  }
+  const uploads:{field:string;path:string;token:string}[]=[];
+  for(const file of files){
+    const signed=await db.storage.from("submission-media").createSignedUploadUrl(file.path,{upsert:true});
+    if(signed.error||!signed.data)
+      throw new ApiError("Não foi possível preparar o envio das imagens.",503);
+    uploads.push({field:file.field,path:file.path,token:signed.data.token});
+  }
+  return reply({received:false,id,session_token:sessionToken,uploads});
+}
+async function finalizeSubmission(body:unknown){
+  const payload=z.object({
+    phase:z.literal("finalize"),request_id:z.string().uuid(),
+    session_token:z.string().min(32).max(256),
+  }).parse(body);
+  const id=payload.request_id;
+  const existing=await db.from("artisan_submissions").select("id").eq("id",id).maybeSingle();
+  if(existing.data)return reply({received:true,id});
+  if(existing.error)throw new ApiError("O recebimento está temporariamente indisponível.",503);
+  const found=await db.from("submission_upload_sessions")
+    .select("id,data,files,session_token_hash,state,expires_at,updated_at")
+    .eq("id",id).maybeSingle();
+  if(found.error)throw new ApiError("O recebimento está temporariamente indisponível.",503);
+  if(!found.data)throw new ApiError("Esta tentativa de envio expirou. Envie o formulário novamente.",410);
+  const session=found.data as UploadSession;
+  if(new Date(session.expires_at).getTime()<=Date.now()){
+    await removeUploadSession(session);
+    throw new ApiError("Esta tentativa de envio expirou. Envie o formulário novamente.",410);
+  }
+  if(!await validSessionToken(payload.session_token,session.session_token_hash))
+    throw new ApiError("Acesso não autorizado.",401);
+  const now=new Date().toISOString();
+  const cutoff=new Date(Date.now()-2*60*1000).toISOString();
+  let claim;
+  if(session.state==="prepared"){
+    claim=await db.from("submission_upload_sessions")
+      .update({state:"processing",updated_at:now,expires_at:sessionExpiry()})
+      .eq("id",id).eq("state","prepared")
+      .select("id,data,files,session_token_hash,state,expires_at,updated_at").maybeSingle();
+  }else{
+    claim=await db.from("submission_upload_sessions")
+      .update({updated_at:now,expires_at:sessionExpiry()})
+      .eq("id",id).eq("state","processing").lt("updated_at",cutoff)
+      .select("id,data,files,session_token_hash,state,expires_at,updated_at").maybeSingle();
+  }
+  if(claim.error)throw new ApiError("O recebimento está temporariamente indisponível.",503);
+  if(!claim.data)throw new ApiError("O envio ainda está sendo finalizado.",409);
+  const claimed=claim.data as UploadSession;
+  const parsed=submissionSchema.parse(claimed.data);
+  const files=parseStoredFiles(claimed.files);
+  const fieldPaths:Record<string,string>={};
+  const uploaded:string[]=[];
+  let saved=false;
+  try{
+    for(const file of files){
+      const download=await db.storage.from("submission-media").download(file.path);
+      if(download.error||!download.data)
+        throw new ApiError("Uma ou mais imagens não chegaram ao arquivo. Tente enviar novamente.",400);
+      if(download.data.size!==file.size)
+        throw new ApiError("Uma imagem recebida está incompleta. Tente enviar novamente.",400);
+      const path=finalPath(id,file.field);
+      const bytes=await imageBytes(download.data,file.type);
+      const uploadedFile=await db.storage.from("submission-media")
+        .upload(path,bytes,{contentType:"image/webp",upsert:true});
+      if(uploadedFile.error)throw new ApiError("Não foi possível armazenar as imagens.",503);
+      uploaded.push(path);fieldPaths[file.field]=path;
+    }
+    const works=parsed.works.map((work,index)=>({...work,position:index,
+      image_paths:[fieldPaths[`work_${index}_0`],fieldPaths[`work_${index}_1`]].filter(Boolean),
+    }));
+    const result=await db.rpc("save_submission",{
+      p_id:id,p_data:parsed,p_portrait:fieldPaths.portrait||null,p_works:works,
+    });
+    if(result.error)throw new ApiError("Não foi possível salvar a proposta. Tente novamente.",503);
+    saved=true;
+    const incoming=files.map(file=>file.path);
+    const removal=incoming.length
+      ?await db.storage.from("submission-media").remove(incoming)
+      :{error:null};
+    if(removal.error){
+      await db.from("submission_upload_sessions").update({
+        state:"prepared",expires_at:new Date(Date.now()-1000).toISOString(),updated_at:new Date().toISOString(),
+      }).eq("id",id);
+      console.error("inovart-api",crypto.randomUUID(),"completed_upload_cleanup_pending");
+    }else{
+      await db.from("submission_upload_sessions").delete().eq("id",id);
+    }
+    return reply({received:true,id},201);
+  }catch(error){
+    if(!saved){
+      if(uploaded.length)await db.storage.from("submission-media").remove(uploaded);
+      await db.from("submission_upload_sessions").update({
+        state:"prepared",updated_at:new Date().toISOString(),
+      }).eq("id",id);
+    }
+    throw error;
+  }
+}
+async function submit(request:Request){
+  if(Number(request.headers.get("content-length")||0)>128*1024)
+    return reply({error:"Os dados do formulário são maiores do que o permitido."},413);
+  if((request.headers.get("content-type")||"").includes("multipart/form-data"))
+    return submitLegacy(request);
+  await cleanupExpiredUploadSessions();
+  const body=await request.json();
+  if((body as {phase?:unknown})?.phase==="prepare")return prepareSubmission(request,body);
+  if((body as {phase?:unknown})?.phase==="finalize")return finalizeSubmission(body);
+  throw new ApiError("Etapa de envio inválida.",400);
+}
+
 async function promote(path:string,target:string) {
   const{data,error}=await db.storage.from("submission-media").download(path);
   if(error||!data)throw new ApiError("Uma imagem aprovada não está disponível.",503);

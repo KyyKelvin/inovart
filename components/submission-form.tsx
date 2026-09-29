@@ -10,9 +10,17 @@ import { parseBrlToCents } from "@/lib/currency";
 const accepted = ["image/jpeg", "image/png", "image/webp"];
 
 type CraftOption = { id: string; name: string };
+type SubmissionUpload = { field: string; path: string; token: string };
+type PrepareSubmissionResponse = Record<string, unknown> & {
+  received: boolean;
+  id: string;
+  session_token?: string;
+  uploads?: SubmissionUpload[];
+};
 
 export function SubmissionForm() {
   const requestId = useRef<string | null>(null);
+  const sessionToken = useRef<string | null>(null);
   const [workCount, setWorkCount] = useState(1);
   const [state, setState] = useState("");
   const [busy, setBusy] = useState(false);
@@ -106,27 +114,60 @@ export function SubmissionForm() {
       }
     }
 
-    const payload = new FormData();
-    requestId.current ??= crypto.randomUUID();
-    payload.set("request_id", requestId.current);
-    payload.set("data", JSON.stringify(parsed.data));
-    payload.set("website", String(raw.get("website") || ""));
+    const files: { field: string; file: File }[] = [];
     const portrait = raw.get("portrait");
-    if (portrait instanceof File && portrait.size) payload.set("portrait", portrait);
+    if (portrait instanceof File && portrait.size) files.push({ field: "portrait", file: portrait });
     for (let index = 0; index < workCount; index++) {
       for (let photo = 0; photo < 2; photo++) {
+        const field = `work_${index}_${photo}`;
         const file = raw.get(`work_image_${index}_${photo}`);
-        if (file instanceof File && file.size) payload.set(`work_${index}_${photo}`, file);
+        if (file instanceof File && file.size) files.push({ field, file });
       }
     }
 
+    requestId.current ??= crypto.randomUUID();
+
     setBusy(true);
-    setState("Enviando seu material para avaliação…");
+    setState("Preparando o envio seguro das imagens…");
     try {
-      await apiRequest("/api/submissions", payload);
+      const prepared = await apiRequest<PrepareSubmissionResponse>("/api/submissions", {
+        phase: "prepare",
+        request_id: requestId.current,
+        session_token: sessionToken.current || undefined,
+        data: parsed.data,
+        website: String(raw.get("website") || ""),
+        files: files.map(({ field, file }) => ({ field, type: file.type, size: file.size })),
+      });
+      if (!prepared.received) {
+        if (!prepared.session_token || !Array.isArray(prepared.uploads))
+          throw new Error("Não foi possível preparar o envio das imagens.");
+        sessionToken.current = prepared.session_token;
+        const filesByField = new Map(files.map((item) => [item.field, item.file]));
+        if (prepared.uploads.length !== files.length)
+          throw new Error("A preparação das imagens ficou incompleta. Tente novamente.");
+        for (let index = 0; index < prepared.uploads.length; index++) {
+          const upload = prepared.uploads[index];
+          const file = filesByField.get(upload.field);
+          if (!file) throw new Error("A preparação das imagens ficou inconsistente. Tente novamente.");
+          setState(`Enviando imagem ${index + 1} de ${files.length}…`);
+          const result = await createClient()
+            .storage.from("submission-media")
+            .uploadToSignedUrl(upload.path, upload.token, file, { contentType: file.type });
+          if (result.error)
+            throw new Error(`Não foi possível enviar a imagem "${file.name}". Tente novamente.`);
+        }
+        setState("Validando as imagens e salvando sua proposta…");
+        await apiRequest("/api/submissions", {
+          phase: "finalize",
+          request_id: requestId.current,
+          session_token: sessionToken.current,
+        });
+      }
       form.reset();
       setRegionWithheld(false);
       setWorkCount(1);
+      requestId.current = null;
+      sessionToken.current = null;
       setReceived(true);
       setState("Recebemos seu material. A equipe vai revisar sua proposta antes da publicação.");
     } catch (error) {

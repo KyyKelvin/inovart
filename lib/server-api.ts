@@ -3,7 +3,7 @@ import { createLimitedBodyStream } from "./request-stream";
 import { createStreamingRequest } from "./streaming-request";
 
 const bodyLimits: Record<string, number> = {
-  submission: 36 * 1024 * 1024,
+  submission: 128 * 1024,
   contact: 32 * 1024,
   editorial: 512 * 1024,
 };
@@ -23,7 +23,7 @@ export async function forwardToBackend(request: Request, action: string) {
     return Response.json({ error: "O recebimento de envios está em preparação. Seus dados ainda não foram enviados. Tente novamente após a abertura do arquivo." }, { status: 503 });
   const bodyLimit = bodyLimits[action] || 64 * 1024;
   if (Number(request.headers.get("content-length") || 0) > bodyLimit)
-    return Response.json({ error: action === "submission" ? "O envio ultrapassa o limite total de 35 MB." : "A solicitação é maior do que o permitido." }, { status: 413 });
+    return Response.json({ error: action === "submission" ? "Os dados do formulário são maiores do que o permitido." : "A solicitação é maior do que o permitido." }, { status: 413 });
   const headers: Record<string, string> = {
     apikey: SUPABASE_KEY, "Content-Type": request.headers.get("content-type") || "application/json",
     "X-Inovart-Action": action,
