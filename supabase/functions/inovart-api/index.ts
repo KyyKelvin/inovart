@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { ImageMagick, initializeImageMagick, MagickFormat } from "@imagemagick/magick-wasm";
-import { contactSchema, submissionSchema, submissionFilesSchema, editorialSchema, identifyImage, assertImageDimensions } from "../_shared/validation.ts";
+import {
+  contactSchema, submissionSchema, submissionFilesSchema, editorialSchema,
+  identifyImage, assertImageDimensions, SUBMISSION_IMAGE_MAX_BYTES,
+  SUBMISSION_IMAGE_MAX_PIXELS, SUBMISSION_IMAGE_OUTPUT_MAX_SIDE,
+} from "../_shared/validation.ts";
 import { z } from "zod";
 
 const url = Deno.env.get("SUPABASE_URL")!;
@@ -56,9 +60,10 @@ async function imageBytes(file:Blob,declaredType=file.type) {
   await ensureMagick();
   try{
     return ImageMagick.read(bytes,image=>{
-      if(image.width>Math.floor(12000000/image.height))throw new ApiError("A imagem excede 12 megapixels.",413);
+      if(image.width>Math.floor(SUBMISSION_IMAGE_MAX_PIXELS/image.height))
+        throw new ApiError("A imagem excede 16 megapixels.",413);
       image.autoOrient();
-      const ratio=Math.min(1,1800/Math.max(image.width,image.height));
+      const ratio=Math.min(1,SUBMISSION_IMAGE_OUTPUT_MAX_SIDE/Math.max(image.width,image.height));
       if(ratio<1)image.resize(Math.max(1,Math.round(image.width*ratio)),Math.max(1,Math.round(image.height*ratio)));
       image.strip();image.quality=82;
       return image.write(MagickFormat.WebP,result=>Uint8Array.from(result));
@@ -105,7 +110,7 @@ async function submitLegacy(request:Request) {
 const storedSubmissionFilesSchema=z.array(z.object({
   field:z.string().regex(/^(portrait|work_[0-2]_[01])$/),
   type:z.enum(["image/jpeg","image/png","image/webp"]),
-  size:z.number().int().min(1).max(5*1024*1024),
+  size:z.number().int().min(1).max(SUBMISSION_IMAGE_MAX_BYTES),
   path:z.string().regex(/^_incoming\/[0-9a-f-]{36}\/(portrait|work_[0-2]_[01])\.(jpg|png|webp)$/),
 })).max(7);
 type StoredSubmissionFile=z.infer<typeof storedSubmissionFilesSchema>[number];

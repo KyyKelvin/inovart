@@ -1,6 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { contactSchema, submissionSchema, submissionFilesSchema, editorialSchema, slugify, identifyImage, readImageDimensions, assertImageDimensions } from "../supabase/functions/_shared/validation.ts";
+import {
+  contactSchema,
+  submissionSchema,
+  submissionFilesSchema,
+  editorialSchema,
+  slugify,
+  identifyImage,
+  readImageDimensions,
+  assertImageDimensions,
+  fitImageDimensions,
+  imageFitsWithin,
+  SUBMISSION_IMAGE_MAX_PIXELS,
+} from "../supabase/functions/_shared/validation.ts";
 import { createLimitedBodyStream } from "../lib/request-stream.ts";
 import { createStreamingRequest } from "../lib/streaming-request.ts";
 import { formatBrlFromCents, formatCentsForInput, parseBrlToCents } from "../lib/currency.ts";
@@ -101,12 +113,19 @@ test("only accepts real image signatures, independently of filename", () => {
   assert.throws(() => identifyImage(new Uint8Array(5*1024*1024+1)));
 });
 test("reads image dimensions before decoding and rejects oversized pixels", () => {
-  for(const image of [png(4000,3000),jpeg(4000,3000),jpeg(4000,3000,0xc2),vp8x(4000,3000),vp8(4000,3000),vp8l(4000,3000)]){
-    assert.deepEqual(readImageDimensions(image),{width:4000,height:3000});
-    assert.deepEqual(assertImageDimensions(image),{width:4000,height:3000});
+  for(const image of [png(4000,4000),jpeg(4000,4000),jpeg(4000,4000,0xc2),vp8x(4000,4000),vp8(4000,4000),vp8l(4000,4000)]){
+    assert.deepEqual(readImageDimensions(image),{width:4000,height:4000});
+    assert.deepEqual(assertImageDimensions(image),{width:4000,height:4000});
   }
-  for(const image of [png(4001,3000),jpeg(4001,3000),vp8x(4001,3000),vp8(4001,3000),vp8l(4001,3000)])
-    assert.throws(()=>assertImageDimensions(image),/12 megapixels/);
+  for(const image of [png(4001,4000),jpeg(4001,4000),vp8x(4001,4000),vp8(4001,4000),vp8l(4001,4000)])
+    assert.throws(()=>assertImageDimensions(image),/16 megapixels/);
+});
+test("fits high-resolution images within the 16 megapixel policy", () => {
+  const fitted=fitImageDimensions({width:8000,height:6000});
+  assert.equal(imageFitsWithin(fitted),true);
+  assert.ok(fitted.width*fitted.height<=SUBMISSION_IMAGE_MAX_PIXELS);
+  assert.ok(Math.abs(fitted.width/fitted.height-8000/6000)<0.001);
+  assert.deepEqual(fitImageDimensions({width:4000,height:3000}),{width:4000,height:3000});
 });
 test("rejects malformed image dimension structures", () => {
   assert.throws(()=>readImageDimensions(png(4000,3000,12)),/PNG/);

@@ -6,8 +6,15 @@ import { submissionSchema } from "@/lib/validation";
 import { apiRequest } from "@/lib/api-client";
 import { createClient } from "@/lib/supabase";
 import { parseBrlToCents } from "@/lib/currency";
+import {
+  SOURCE_IMAGE_MAX_BYTES,
+  SUBMISSION_IMAGE_MAX_PIXELS,
+  SUBMISSION_IMAGE_TYPES,
+} from "@/supabase/functions/_shared/image-policy";
 
-const accepted = ["image/jpeg", "image/png", "image/webp"];
+const accepted = [...SUBMISSION_IMAGE_TYPES];
+const maxMegapixels = SUBMISSION_IMAGE_MAX_PIXELS / 1_000_000;
+const maxSourceMegabytes = SOURCE_IMAGE_MAX_BYTES / (1024 * 1024);
 
 type CraftOption = { id: string; name: string };
 type SubmissionUpload = { field: string; path: string; token: string };
@@ -21,6 +28,11 @@ type PrepareSubmissionResponse = Record<string, unknown> & {
 export function SubmissionForm() {
   const requestId = useRef<string | null>(null);
   const sessionToken = useRef<string | null>(null);
+  const optimizedFiles = useRef(new Map<string, {
+    fingerprint: string;
+    file: File;
+    optimized: boolean;
+  }>());
   const [workCount, setWorkCount] = useState(1);
   const [state, setState] = useState("");
   const [busy, setBusy] = useState(false);
@@ -104,9 +116,9 @@ export function SubmissionForm() {
 
     for (const [field, value] of raw.entries()) {
       if (!(value instanceof File) || !value.size) continue;
-      if (!accepted.includes(value.type) || value.size > 5 * 1024 * 1024) {
+      if (!accepted.includes(value.type as (typeof accepted)[number]) || value.size > SOURCE_IMAGE_MAX_BYTES) {
         setInvalidField(field);
-        setState(`A imagem "${value.name}" precisa ser JPEG, PNG ou WebP e ter até 5 MB.`);
+        setState(`A imagem "${value.name}" precisa ser JPEG, PNG ou WebP e ter até ${maxSourceMegabytes} MB.`);
         requestAnimationFrame(() =>
           (form.elements.namedItem(field) as HTMLElement | null)?.focus(),
         );
@@ -114,48 +126,91 @@ export function SubmissionForm() {
       }
     }
 
-    const files: { field: string; file: File }[] = [];
+    const files: { field: string; inputName: string; file: File }[] = [];
     const portrait = raw.get("portrait");
-    if (portrait instanceof File && portrait.size) files.push({ field: "portrait", file: portrait });
+    if (portrait instanceof File && portrait.size)
+      files.push({ field: "portrait", inputName: "portrait", file: portrait });
     for (let index = 0; index < workCount; index++) {
       for (let photo = 0; photo < 2; photo++) {
         const field = `work_${index}_${photo}`;
         const file = raw.get(`work_image_${index}_${photo}`);
-        if (file instanceof File && file.size) files.push({ field, file });
+        if (file instanceof File && file.size)
+          files.push({ field, inputName: `work_image_${index}_${photo}`, file });
       }
     }
 
     requestId.current ??= crypto.randomUUID();
 
     setBusy(true);
-    setState("Preparando o envio seguro das imagens…");
     try {
+      const preparedFiles: typeof files = [];
+      let optimizedCount = 0;
+      if (files.length) {
+        const { prepareSubmissionImage, submissionImageFingerprint } = await import("@/lib/submission-image");
+        for (let index = 0; index < files.length; index++) {
+          const item = files[index];
+          const fingerprint = submissionImageFingerprint(item.file);
+          const cached = optimizedFiles.current.get(item.field);
+          setState(`Otimizando imagem ${index + 1} de ${files.length}…`);
+          try {
+            const result = cached?.fingerprint === fingerprint
+              ? { file: cached.file, optimized: cached.optimized }
+              : await prepareSubmissionImage(item.file);
+            optimizedFiles.current.set(item.field, {
+              fingerprint,
+              file: result.file,
+              optimized: result.optimized,
+            });
+            if (result.optimized) optimizedCount++;
+            preparedFiles.push({ ...item, file: result.file });
+          } catch (error) {
+            setInvalidField(item.inputName);
+            requestAnimationFrame(() =>
+              (form.elements.namedItem(item.inputName) as HTMLElement | null)?.focus(),
+            );
+            throw error;
+          }
+        }
+      }
+      setState(optimizedCount
+        ? `${optimizedCount} imagem(ns) otimizada(s). Preparando o envio seguro…`
+        : "Preparando o envio seguro das imagens…");
       const prepared = await apiRequest<PrepareSubmissionResponse>("/api/submissions", {
         phase: "prepare",
         request_id: requestId.current,
         session_token: sessionToken.current || undefined,
         data: parsed.data,
         website: String(raw.get("website") || ""),
-        files: files.map(({ field, file }) => ({ field, type: file.type, size: file.size })),
+        files: preparedFiles.map(({ field, file }) => ({ field, type: file.type, size: file.size })),
       });
       if (!prepared.received) {
         if (!prepared.session_token || !Array.isArray(prepared.uploads))
           throw new Error("Não foi possível preparar o envio das imagens.");
         sessionToken.current = prepared.session_token;
-        const filesByField = new Map(files.map((item) => [item.field, item.file]));
-        if (prepared.uploads.length !== files.length)
+        const filesByField = new Map(preparedFiles.map((item) => [item.field, item.file]));
+        if (prepared.uploads.length !== preparedFiles.length)
           throw new Error("A preparação das imagens ficou incompleta. Tente novamente.");
-        for (let index = 0; index < prepared.uploads.length; index++) {
-          const upload = prepared.uploads[index];
-          const file = filesByField.get(upload.field);
-          if (!file) throw new Error("A preparação das imagens ficou inconsistente. Tente novamente.");
-          setState(`Enviando imagem ${index + 1} de ${files.length}…`);
-          const result = await createClient()
-            .storage.from("submission-media")
-            .uploadToSignedUrl(upload.path, upload.token, file, { contentType: file.type });
-          if (result.error)
-            throw new Error(`Não foi possível enviar a imagem "${file.name}". Tente novamente.`);
-        }
+        const storage = createClient().storage.from("submission-media");
+        let nextUpload = 0;
+        let uploaded = 0;
+        const uploadWorker = async () => {
+          while (nextUpload < prepared.uploads!.length) {
+            const upload = prepared.uploads![nextUpload++];
+            const file = filesByField.get(upload.field);
+            if (!file) throw new Error("A preparação das imagens ficou inconsistente. Tente novamente.");
+            const result = await storage.uploadToSignedUrl(upload.path, upload.token, file, {
+              contentType: file.type,
+            });
+            if (result.error)
+              throw new Error(`Não foi possível enviar a imagem "${file.name}". Tente novamente.`);
+            uploaded++;
+            setState(`Enviando imagem ${uploaded} de ${preparedFiles.length}…`);
+          }
+        };
+        await Promise.all(Array.from(
+          { length: Math.min(2, prepared.uploads.length) },
+          () => uploadWorker(),
+        ));
         setState("Validando as imagens e salvando sua proposta…");
         await apiRequest("/api/submissions", {
           phase: "finalize",
@@ -168,6 +223,7 @@ export function SubmissionForm() {
       setWorkCount(1);
       requestId.current = null;
       sessionToken.current = null;
+      optimizedFiles.current.clear();
       setReceived(true);
       setState("Recebemos seu material. A equipe vai revisar sua proposta antes da publicação.");
     } catch (error) {
@@ -299,9 +355,9 @@ export function SubmissionForm() {
           />
         </div>
         <div className="field full">
-          <label htmlFor="portrait">Retrato autorizado · até 5 MB</label>
+          <label htmlFor="portrait">Retrato autorizado · original de até {maxSourceMegabytes} MB</label>
           <input id="portrait" name="portrait" type="file" accept={accepted.join(",")} />
-          <small>JPEG, PNG ou WebP. As fotografias só serão publicadas após revisão.</small>
+          <small>JPEG, PNG ou WebP. Acima de {maxMegapixels} MP, a imagem será otimizada antes do envio.</small>
         </div>
 
         {Array.from({ length: workCount }, (_, index) => (
@@ -363,7 +419,7 @@ export function SubmissionForm() {
               {[0, 1].map((photo) => (
                 <div className="field" key={photo}>
                   <label htmlFor={`work_image_${index}_${photo}`}>
-                    Imagem {photo + 1} · até 5 MB
+                    Imagem {photo + 1} · original de até {maxSourceMegabytes} MB
                   </label>
                   <input
                     id={`work_image_${index}_${photo}`}
@@ -372,6 +428,7 @@ export function SubmissionForm() {
                     accept={accepted.join(",")}
                     aria-invalid={invalidField === `work_image_${index}_${photo}` || undefined}
                   />
+                  <small>O site reduz automaticamente imagens acima de {maxMegapixels} MP.</small>
                 </div>
               ))}
             </div>
