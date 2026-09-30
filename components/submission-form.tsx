@@ -252,7 +252,7 @@ export function SubmissionForm() {
 
   return (
     <form
-      className="window"
+      className="window submission-form"
       onSubmit={submit}
       onInput={(event) => {
         if ((event.target as HTMLInputElement).name === invalidField) setInvalidField("");

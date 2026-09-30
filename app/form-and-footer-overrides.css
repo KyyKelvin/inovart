@@ -1,0 +1,17 @@
+.submission-form .field {
+  min-width: 0;
+  align-content: start;
+}
+
+.submission-form .field > input,
+.submission-form .field > select {
+  height: 46px;
+}
+
+.submission-form .field > textarea {
+  align-self: start;
+}
+
+.footer-title::after {
+  background: linear-gradient(90deg, var(--blue2), var(--blue), #a76cff, var(--blue2));
+}

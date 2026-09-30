@@ -3,7 +3,7 @@ import { SiteHeader } from "@/components/site-header";
 import { WebMcp } from "@/components/webmcp";
 import "./globals.css";
 import "./refinements.css";
-
+import "./form-and-footer-overrides.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://inovart-varginha.kelvinky-augusto.chatgpt.site"),
   title: { default: "InovArt - Arquivo tecnoartesanal", template: "%s - InovArt" },
